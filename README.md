@@ -207,6 +207,38 @@ npm run build
 npm start
 ```
 
+## 🚀 Deploying to Vercel
+
+### Quick Deploy (5 Minutes)
+
+1. **Push to Git**
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push origin main
+   ```
+
+2. **Import to Vercel**
+   - Go to [vercel.com/new](https://vercel.com/new)
+   - Import your repository
+   - Framework: Next.js (auto-detected)
+
+3. **Add Environment Variables**
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://dmsncyknmivvutrhcfhi.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   ```
+
+4. **Deploy!** - Click Deploy and wait 2-3 minutes
+
+**📚 Detailed Guide**: See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+**⚡ Quick Guide**: See [QUICK_DEPLOY.md](./QUICK_DEPLOY.md)
+
+### Other Platforms
+- Netlify
+- AWS Amplify
+- Railway
+
 ## License
 
 Private - Tamer Consumer Company
