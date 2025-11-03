@@ -1,0 +1,104 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { LayoutDashboard, Monitor, Users, FileText, LogOut } from 'lucide-react';
+import { getCurrentUser, logout } from '@/lib/auth';
+
+const Sidebar = () => {
+  const pathname = usePathname();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    setCurrentUser(getCurrentUser());
+  }, []);
+
+  const navItems = [
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/devices', label: 'Devices', icon: Monitor },
+    { href: '/users', label: 'Users', icon: Users },
+    { href: '/reports', label: 'Reports', icon: FileText },
+  ];
+
+  const handleLogout = () => {
+    if (confirm('Are you sure you want to logout?')) {
+      logout();
+    }
+  };
+
+  return (
+    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen fixed left-0 top-0 shadow-2xl border-r border-gray-700">
+      <div className="p-6">
+        <div className="flex items-center space-x-3 mb-8 group">
+          <div className="relative">
+            <div className="absolute inset-0 bg-green-500 rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
+            <Image src="/Tamer_logo.png" alt="Tamer Logo" width={45} height={45} className="relative object-contain transform group-hover:scale-110 transition-transform" />
+          </div>
+          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 bg-clip-text text-transparent animate-pulse-soft">
+            INFORA
+          </h1>
+        </div>
+        <nav className="space-y-1">
+          {navItems.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{ animationDelay: `${index * 50}ms` }}
+                className={`group relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 animate-fade-in ${
+                  isActive
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/50'
+                    : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:translate-x-1'
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute left-0 w-1 h-8 bg-white rounded-r-full"></div>
+                )}
+                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-green-400'} transition-colors`} />
+                <span className="font-medium">{item.label}</span>
+                {isActive && (
+                  <div className="absolute right-2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-700 bg-gradient-to-t from-gray-900 to-transparent">
+        <div className="mb-3">
+          <div className="flex items-center space-x-3 mb-4 p-3 rounded-xl bg-gray-800/50 backdrop-blur-sm">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full blur-sm opacity-50"></div>
+              <div className="relative h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-green-400/20">
+                <span className="text-white font-bold text-lg">
+                  {currentUser?.full_name?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-white text-sm truncate">
+                {currentUser?.full_name || 'User'}
+              </p>
+              <p className="text-xs text-gray-400 truncate">{currentUser?.email || ''}</p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="group w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl transition-all text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+          >
+            <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;
+
