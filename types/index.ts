@@ -19,6 +19,8 @@ export interface Device {
   id: string;
   name: string;
   type: string;
+  barcode: string | null;
+  asset_number: string | null;
   serial_number: string;
   status: DeviceStatus;
   assigned_to: string | null;
@@ -65,6 +67,7 @@ export interface DashboardStats {
 export interface DeviceFormData {
   name: string;
   type: string;
+  asset_number: string;
   serial_number: string;
   status: DeviceStatus;
   purchase_date: string;
@@ -86,4 +89,34 @@ export type ReportType =
   | 'available_devices'
   | 'user_devices'
   | 'maintenance_history';
+
+export type RequestType = 'device_request' | 'it_support';
+
+export type RequestStatus = 'pending' | 'in_progress' | 'approved' | 'rejected' | 'completed' | 'closed';
+
+export type RequestPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface Request {
+  id: string;
+  user_id: string;
+  request_type: RequestType;
+  title: string;
+  description: string;
+  priority: RequestPriority;
+  status: RequestStatus;
+  device_type: string | null;
+  assigned_to: string | null;
+  resolution_notes: string | null;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+  user?: {
+    full_name: string;
+    email: string;
+    department: string;
+  };
+  assignee?: {
+    full_name: string;
+  };
+}
 

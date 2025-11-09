@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Monitor, Users, FileText, LogOut } from 'lucide-react';
+import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan } from 'lucide-react';
 import { getCurrentUser, logout } from '@/lib/auth';
 
 const Sidebar = () => {
@@ -19,6 +19,11 @@ const Sidebar = () => {
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/devices', label: 'Devices', icon: Monitor },
     { href: '/users', label: 'Users', icon: Users },
+    { href: '/scan', label: 'Quick Scan', icon: Scan },
+    { href: '/requests', label: 'Requests', icon: MessageSquare },
+    { href: '/notifications', label: 'Notifications', icon: Bell },
+    { href: '/analytics', label: 'Analytics', icon: TrendingUp },
+    { href: '/activity', label: 'Activity Log', icon: Activity },
     { href: '/reports', label: 'Reports', icon: FileText },
   ];
 

@@ -13,43 +13,54 @@ type ReportType =
   | 'assets'
   | 'user_devices'
   | 'available_stock'
-  | 'warranty';
+  | 'warranty'
+  | 'it_problems';
 
 const ReportsPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportType>('operations');
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  
+  // Date filters for operations report
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const reportTypes = [
     {
       id: 'operations' as ReportType,
       title: 'Operations Report',
-      description: 'All operations and assignments within the last month',
+      description: 'All operations and assignments filtered by date range',
       icon: FileText,
     },
     {
       id: 'assets' as ReportType,
       title: 'Asset Report',
-      description: 'All devices assigned to all employees',
+      description: 'All assets grouped by status (assigned, available, maintenance)',
       icon: FileText,
     },
     {
       id: 'user_devices' as ReportType,
       title: 'User Devices Report',
-      description: 'Each user and their assigned devices breakdown',
+      description: 'Show all devices that are assigned to users',
       icon: FileText,
     },
     {
       id: 'available_stock' as ReportType,
       title: 'Available Stock Report',
-      description: 'All available devices currently in stock',
+      description: 'Show only devices that are available in stock',
       icon: FileText,
     },
     {
       id: 'warranty' as ReportType,
       title: 'Warranty Status Report',
-      description: 'Devices still under warranty (within 4 years of purchase)',
+      description: 'All devices in warranty and out of warranty',
+      icon: FileText,
+    },
+    {
+      id: 'it_problems' as ReportType,
+      title: 'IT Problems Report',
+      description: 'All IT support problems reported by employees',
       icon: FileText,
     },
   ];
@@ -99,16 +110,22 @@ const ReportsPage = () => {
     doc.text(title, 14, 42);
   };
 
-  // 1. Operations Report - All operations within the last month
+  // 1. Operations Report - All operations filtered by date range
   const generateOperationsReport = async () => {
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
     let query = supabase
       .from('assignments')
       .select('*, devices(name, type, serial_number), users(full_name, department)')
-      .gte('assigned_date', oneMonthAgo.toISOString())
       .order('assigned_date', { ascending: false });
+
+    // Apply date filters if provided
+    if (startDate) {
+      query = query.gte('assigned_date', new Date(startDate).toISOString());
+    }
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+      query = query.lte('assigned_date', endDateTime.toISOString());
+    }
 
     // Filter by specific user if selected
     if (selectedUserId !== 'all') {
@@ -123,19 +140,29 @@ const ReportsPage = () => {
     
     // Add logo and header
     const reportTitle = selectedUserId === 'all'
-      ? 'Operations Report - Last Month'
+      ? 'Operations Report'
       : `Operations Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
     addLogoToPDF(doc, reportTitle);
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
-    doc.text(`Period: ${oneMonthAgo.toLocaleDateString()} - ${new Date().toLocaleDateString()}`, 14, 56);
+    
+    const periodText = startDate && endDate 
+      ? `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+      : startDate 
+      ? `Period: From ${new Date(startDate).toLocaleDateString()}`
+      : endDate
+      ? `Period: Until ${new Date(endDate).toLocaleDateString()}`
+      : 'Period: All Time';
+    
+    doc.text(periodText, 14, 56);
     doc.text(`Total Operations: ${assignments.length}`, 14, 62);
     
     const tableData = assignments.map((assignment: any) => [
       new Date(assignment.assigned_date).toLocaleDateString(),
       assignment.devices?.name || 'N/A',
+      assignment.devices?.asset_number || 'N/A',
       assignment.devices?.type || 'N/A',
       assignment.devices?.serial_number || 'N/A',
       assignment.users?.full_name || 'N/A',
@@ -145,11 +172,11 @@ const ReportsPage = () => {
 
     autoTable(doc, {
       startY: 68,
-      head: [['Date', 'Device', 'Type', 'Serial No.', 'User', 'Department', 'Status']],
+      head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial No.', 'User', 'Department', 'Status']],
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [16, 185, 129] },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
     });
 
     const fileName = selectedUserId === 'all'
@@ -159,19 +186,19 @@ const ReportsPage = () => {
     doc.save(fileName);
   };
 
-  // 2. Asset Report - All devices assigned to all employees
+  // 2. Asset Report - All assets grouped by status
   const generateAssetReport = async () => {
     let query = supabase
       .from('devices')
       .select('*, users!devices_assigned_to_fkey(full_name, email, department)')
-      .eq('status', 'assigned');
+      .order('status');
 
     // Filter by specific user if selected
     if (selectedUserId !== 'all') {
       query = query.eq('assigned_to', selectedUserId);
     }
 
-    const { data: devices } = await query.order('users(full_name)');
+    const { data: devices } = await query;
 
     if (!devices) return;
 
@@ -179,32 +206,72 @@ const ReportsPage = () => {
     
     // Add logo and header
     const reportTitle = selectedUserId === 'all'
-      ? 'Asset Report - All Assigned Devices'
+      ? 'Asset Report - All Assets Grouped by Status'
       : `Asset Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
     addLogoToPDF(doc, reportTitle);
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
-    doc.text(`Total Assets Assigned: ${devices.length}`, 14, 56);
+    doc.text(`Total Assets: ${devices.length}`, 14, 56);
     
-    const tableData = devices.map((device: any) => [
-      device.users?.full_name || 'N/A',
-      device.users?.department || 'N/A',
-      device.name,
-      device.type,
-      device.serial_number,
-      device.purchase_date,
-      device.assigned_date ? new Date(device.assigned_date).toLocaleDateString() : 'N/A',
-    ]);
+    // Group devices by status
+    const groupedByStatus: { [key: string]: any[] } = {};
+    devices.forEach((device: any) => {
+      const status = device.status || 'unknown';
+      if (!groupedByStatus[status]) {
+        groupedByStatus[status] = [];
+      }
+      groupedByStatus[status].push(device);
+    });
 
-    autoTable(doc, {
-      startY: 62,
-      head: [['Employee', 'Department', 'Device', 'Type', 'Serial Number', 'Purchase Date', 'Assigned Date']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [16, 185, 129] },
-      styles: { fontSize: 8 },
+    // Display summary
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Assets Summary by Status:', 14, 64);
+    doc.setFont('helvetica', 'normal');
+    let yPos = 70;
+    Object.entries(groupedByStatus).forEach(([status, statusDevices]) => {
+      doc.text(`${status.toUpperCase()}: ${statusDevices.length} devices`, 20, yPos);
+      yPos += 5;
+    });
+
+    let startY = yPos + 10;
+
+    // Create tables for each status group
+    Object.entries(groupedByStatus).forEach(([status, statusDevices]) => {
+      if (startY > 250) {
+        doc.addPage();
+        startY = 20;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(16, 185, 129);
+      doc.text(`${status.toUpperCase()} (${statusDevices.length})`, 14, startY);
+      doc.setTextColor(0, 0, 0);
+      
+      const tableData = statusDevices.map((device: any) => [
+        device.name,
+        device.asset_number || 'N/A',
+        device.type,
+        device.serial_number,
+        device.users?.full_name || 'N/A',
+        device.users?.department || 'N/A',
+        device.purchase_date,
+        device.assigned_date ? new Date(device.assigned_date).toLocaleDateString() : 'N/A',
+      ]);
+
+      autoTable(doc, {
+        startY: startY + 5,
+        head: [['Device', 'Asset No.', 'Type', 'Serial Number', 'Employee', 'Department', 'Purchase Date', 'Assigned Date']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [16, 185, 129] },
+        styles: { fontSize: 7 },
+      });
+
+      startY = (doc as any).lastAutoTable.finalY + 15;
     });
 
     const fileName = selectedUserId === 'all'
@@ -254,6 +321,7 @@ const ReportsPage = () => {
     const tableData = devices.map((device: any) => [
       device.type,
       device.name,
+      device.asset_number || 'N/A',
       device.serial_number,
       device.specifications || 'N/A',
       device.purchase_date,
@@ -262,11 +330,11 @@ const ReportsPage = () => {
 
     autoTable(doc, {
       startY: yPos + 5,
-      head: [['Type', 'Device Name', 'Serial Number', 'Specifications', 'Purchase Date', 'Warranty Expiry']],
+      head: [['Type', 'Device Name', 'Asset No.', 'Serial Number', 'Specifications', 'Purchase Date', 'Warranty Expiry']],
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [16, 185, 129] },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
     });
 
     doc.save(`available_stock_report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -287,22 +355,33 @@ const ReportsPage = () => {
 
     if (!usersData) return;
 
+    // Filter to show only users with devices
+    const usersWithDevices = usersData.filter((user: any) => {
+      const devices = user.devices || [];
+      return devices.length > 0;
+    });
+
+    if (usersWithDevices.length === 0) {
+      alert('No users with assigned devices found.');
+      return;
+    }
+
     const doc = new jsPDF();
     
     // Add logo and header
     const reportTitle = selectedUserId === 'all'
-      ? 'User Devices Report - All Users'
+      ? 'User Devices Report - Users with Devices'
       : `User Devices Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
     addLogoToPDF(doc, reportTitle);
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
-    doc.text(`Total Users: ${usersData.length}`, 14, 56);
+    doc.text(`Total Users with Devices: ${usersWithDevices.length}`, 14, 56);
     
     let startY = 65;
 
-    usersData.forEach((user: any) => {
+    usersWithDevices.forEach((user: any) => {
       const devices = user.devices || [];
       
       if (startY > 250) {
@@ -318,38 +397,35 @@ const ReportsPage = () => {
       doc.text(`Email: ${user.email}`, 14, startY + 6);
       doc.text(`Devices Assigned: ${devices.length}`, 14, startY + 12);
 
-      if (devices.length > 0) {
-        const tableData = devices.map((device: any) => [
-          device.name,
-          device.type,
-          device.serial_number,
-          device.assigned_date ? new Date(device.assigned_date).toLocaleDateString() : 'N/A',
-        ]);
+      const tableData = devices.map((device: any) => [
+        device.name,
+        device.asset_number || 'N/A',
+        device.type,
+        device.serial_number,
+        device.assigned_date ? new Date(device.assigned_date).toLocaleDateString() : 'N/A',
+      ]);
 
-        autoTable(doc, {
-          startY: startY + 18,
-          head: [['Device Name', 'Type', 'Serial Number', 'Assigned Date']],
-          body: tableData,
-          theme: 'grid',
-          headStyles: { fillColor: [16, 185, 129] },
-          margin: { left: 20 },
-        });
+      autoTable(doc, {
+        startY: startY + 18,
+        head: [['Device Name', 'Asset No.', 'Type', 'Serial Number', 'Assigned Date']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [16, 185, 129] },
+        margin: { left: 20 },
+        styles: { fontSize: 8 },
+      });
 
-        startY = (doc as any).lastAutoTable.finalY + 15;
-      } else {
-        doc.text('No devices assigned', 20, startY + 18);
-        startY += 30;
-      }
+      startY = (doc as any).lastAutoTable.finalY + 15;
     });
 
     const fileName = selectedUserId === 'all' 
       ? 'user_devices_report_all.pdf'
-      : `user_devices_report_${usersData[0]?.full_name.replace(/\s+/g, '_')}.pdf`;
+      : `user_devices_report_${usersWithDevices[0]?.full_name.replace(/\s+/g, '_')}.pdf`;
     
     doc.save(fileName);
   };
 
-  // 5. Warranty Status Report - Devices still under warranty (within 4 years)
+  // 5. Warranty Status Report - All devices (in warranty and out of warranty)
   const generateWarrantyReport = async () => {
     const { data: devices } = await supabase
       .from('devices')
@@ -358,13 +434,18 @@ const ReportsPage = () => {
 
     if (!devices) return;
 
-    // Filter devices still under warranty (within 4 years of purchase)
+    // Separate devices by warranty status (within 4 years of purchase)
     const fourYearsAgo = new Date();
     fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
 
     const underWarranty = devices.filter((device: any) => {
       const purchaseDate = new Date(device.purchase_date);
       return purchaseDate >= fourYearsAgo;
+    });
+
+    const outOfWarranty = devices.filter((device: any) => {
+      const purchaseDate = new Date(device.purchase_date);
+      return purchaseDate < fourYearsAgo;
     });
 
     const doc = new jsPDF();
@@ -375,45 +456,177 @@ const ReportsPage = () => {
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
-    doc.text(`Devices Under Warranty: ${underWarranty.length}`, 14, 56);
-    doc.text(`Warranty Period: Within 4 years from purchase date`, 14, 62);
+    doc.text(`Total Devices: ${devices.length}`, 14, 56);
+    doc.text(`Under Warranty: ${underWarranty.length}`, 14, 62);
+    doc.text(`Out of Warranty: ${outOfWarranty.length}`, 14, 68);
+    doc.text(`Warranty Period: 4 years from purchase date`, 14, 74);
     
-    const tableData = underWarranty.map((device: any) => {
-      const purchaseDate = new Date(device.purchase_date);
-      const warrantyEndDate = new Date(purchaseDate);
-      warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 4);
+    let startY = 82;
+
+    // Section 1: Devices Under Warranty
+    if (underWarranty.length > 0) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(34, 197, 94); // Green color
+      doc.text('✓ DEVICES UNDER WARRANTY', 14, startY);
+      doc.setTextColor(0, 0, 0);
       
-      const daysRemaining = Math.ceil((warrantyEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      const underWarrantyData = underWarranty.map((device: any) => {
+        const purchaseDate = new Date(device.purchase_date);
+        const warrantyEndDate = new Date(purchaseDate);
+        warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 4);
+        
+        const daysRemaining = Math.ceil((warrantyEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        
+        return [
+          device.name,
+          device.asset_number || 'N/A',
+          device.type,
+          device.serial_number,
+          device.purchase_date,
+          warrantyEndDate.toLocaleDateString(),
+          daysRemaining > 0 ? `${daysRemaining} days` : 'Expired',
+          device.status,
+        ];
+      });
+
+      autoTable(doc, {
+        startY: startY + 6,
+        head: [['Device Name', 'Asset No.', 'Type', 'Serial Number', 'Purchase Date', 'Warranty Ends', 'Days Remaining', 'Status']],
+        body: underWarrantyData,
+        theme: 'striped',
+        headStyles: { fillColor: [34, 197, 94] }, // Green
+        styles: { fontSize: 7 },
+        columnStyles: {
+          6: { halign: 'center' },
+        },
+      });
+
+      startY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Section 2: Devices Out of Warranty
+    if (outOfWarranty.length > 0) {
+      if (startY > 250) {
+        doc.addPage();
+        startY = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(239, 68, 68); // Red color
+      doc.text('✕ DEVICES OUT OF WARRANTY', 14, startY);
+      doc.setTextColor(0, 0, 0);
       
-      return [
-        device.name,
-        device.type,
-        device.serial_number,
-        device.purchase_date,
-        warrantyEndDate.toLocaleDateString(),
-        daysRemaining > 0 ? `${daysRemaining} days` : 'Expired',
-        device.status,
-      ];
+      const outOfWarrantyData = outOfWarranty.map((device: any) => {
+        const purchaseDate = new Date(device.purchase_date);
+        const warrantyEndDate = new Date(purchaseDate);
+        warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 4);
+        
+        const daysExpired = Math.abs(Math.ceil((warrantyEndDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+        
+        return [
+          device.name,
+          device.asset_number || 'N/A',
+          device.type,
+          device.serial_number,
+          device.purchase_date,
+          warrantyEndDate.toLocaleDateString(),
+          `${daysExpired} days ago`,
+          device.status,
+        ];
+      });
+
+      autoTable(doc, {
+        startY: startY + 6,
+        head: [['Device Name', 'Asset No.', 'Type', 'Serial Number', 'Purchase Date', 'Warranty Ended', 'Expired', 'Status']],
+        body: outOfWarrantyData,
+        theme: 'striped',
+        headStyles: { fillColor: [239, 68, 68] }, // Red
+        styles: { fontSize: 7 },
+        columnStyles: {
+          6: { halign: 'center' },
+        },
+      });
+    }
+
+    doc.save(`warranty_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  // 6. IT Problems Report - All IT support problems reported by employees
+  const generateITProblemsReport = async () => {
+    const { data: problems } = await supabase
+      .from('requests')
+      .select('*, user:users!requests_user_id_fkey(full_name, email, department)')
+      .eq('request_type', 'it_support')
+      .order('created_at', { ascending: false });
+
+    if (!problems) return;
+
+    const doc = new jsPDF();
+    
+    // Add logo and header
+    addLogoToPDF(doc, 'IT Problems Report');
+    
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
+    doc.text(`Total IT Problems: ${problems.length}`, 14, 56);
+    
+    // Group by status
+    const statusGroups = ['pending', 'in_progress', 'completed', 'closed'];
+    const groupCounts = statusGroups.map(status => ({
+      status,
+      count: problems.filter((p: any) => p.status === status).length
+    }));
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Problems Summary by Status:', 14, 64);
+    doc.setFont('helvetica', 'normal');
+    let yPos = 70;
+    groupCounts.forEach(({ status, count }) => {
+      if (count > 0) {
+        doc.text(`${status.toUpperCase()}: ${count} problems`, 20, yPos);
+        yPos += 5;
+      }
     });
 
+    const tableData = problems.map((problem: any) => [
+      new Date(problem.created_at).toLocaleDateString(),
+      problem.user?.full_name || 'N/A',
+      problem.user?.department || 'N/A',
+      problem.title,
+      problem.description.length > 100 ? problem.description.substring(0, 100) + '...' : problem.description,
+      problem.priority.toUpperCase(),
+      problem.status.replace('_', ' ').toUpperCase(),
+    ]);
+
     autoTable(doc, {
-      startY: 68,
-      head: [['Device Name', 'Type', 'Serial Number', 'Purchase Date', 'Warranty Ends', 'Days Remaining', 'Status']],
+      startY: yPos + 5,
+      head: [['Date', 'Employee', 'Department', 'Problem Title', 'Description', 'Priority', 'Status']],
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [16, 185, 129] },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
       columnStyles: {
-        5: { halign: 'center' },
+        4: { cellWidth: 50 }, // Description column wider
       },
     });
 
     // Add summary at the end
-    const finalY = (doc as any).lastAutoTable.finalY || 46;
+    const finalY = (doc as any).lastAutoTable.finalY || 80;
     doc.setFontSize(10);
-    doc.text(`Total Devices in Report: ${underWarranty.length}`, 14, finalY + 10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total Problems Reported: ${problems.length}`, 14, finalY + 10);
+    
+    const pendingCount = problems.filter((p: any) => p.status === 'pending').length;
+    if (pendingCount > 0) {
+      doc.setTextColor(220, 38, 38);
+      doc.text(`⚠ ${pendingCount} problems pending attention`, 14, finalY + 16);
+    }
 
-    doc.save(`warranty_report_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`it_problems_report_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handleGenerateReport = async () => {
@@ -435,6 +648,9 @@ const ReportsPage = () => {
           break;
         case 'warranty':
           await generateWarrantyReport();
+          break;
+        case 'it_problems':
+          await generateITProblemsReport();
           break;
       }
     } catch (error) {
@@ -513,6 +729,56 @@ const ReportsPage = () => {
           </div>
 
           <div className="border-t border-gray-200 pt-6">
+            {/* Date Range Filter - Show for operations report */}
+            {selectedReport === 'operations' && (
+              <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                  <label className="block text-sm font-semibold text-gray-900">
+                    Filter by Date Range
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-900"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-white rounded border border-purple-100">
+                  <p className="text-sm text-gray-700 font-medium mb-1">
+                    {startDate || endDate ? '✓ Date Filter Applied' : 'ℹ All Dates (No Filter)'}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {startDate && endDate
+                      ? `Showing operations from ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`
+                      : startDate
+                      ? `Showing operations from ${new Date(startDate).toLocaleDateString()} onwards`
+                      : endDate
+                      ? `Showing operations until ${new Date(endDate).toLocaleDateString()}`
+                      : 'Showing all operations (no date filter applied)'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* User Selector - Show for user-related reports */}
             {(selectedReport === 'user_devices' || selectedReport === 'operations' || selectedReport === 'assets') && (
               <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -525,12 +791,12 @@ const ReportsPage = () => {
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-gray-900"
                 >
-                  <option value="all">📊 All Users</option>
-                  <optgroup label="Active Users">
+                  <option value="all" className="text-gray-900">📊 All Users</option>
+                  <optgroup label="Active Users" className="text-gray-900 font-semibold">
                     {users.map((user) => (
-                      <option key={user.id} value={user.id}>
+                      <option key={user.id} value={user.id} className="text-gray-900">
                         👤 {user.full_name} - {user.department}
                       </option>
                     ))}
@@ -589,31 +855,37 @@ const ReportsPage = () => {
             <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
               <h4 className="font-semibold text-gray-900 mb-2">📋 Operations Report</h4>
               <p className="text-sm text-gray-600">
-                Track all device assignments and operations from the last month with detailed history.
+                Track all device assignments and operations filtered by custom date range with detailed history.
               </p>
             </div>
             <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-gray-900 mb-2">💼 Asset Report</h4>
               <p className="text-sm text-gray-600">
-                Complete list of all devices currently assigned to employees across all departments.
+                All assets organized and grouped by their current status (assigned, available, maintenance, etc.).
               </p>
             </div>
             <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200">
               <h4 className="font-semibold text-gray-900 mb-2">👤 User Devices Report</h4>
               <p className="text-sm text-gray-600">
-                Detailed breakdown showing each user and their specifically assigned devices.
+                Shows only users who have devices assigned, with detailed breakdown of their equipment.
               </p>
             </div>
             <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200">
               <h4 className="font-semibold text-gray-900 mb-2">📦 Available Stock Report</h4>
               <p className="text-sm text-gray-600">
-                Inventory of all available devices in stock ready for assignment with specifications.
+                Inventory showing only available devices in stock ready for assignment with specifications.
               </p>
             </div>
             <div className="p-4 bg-gradient-to-br from-red-50 to-rose-50 rounded-lg border border-red-200">
               <h4 className="font-semibold text-gray-900 mb-2">🛡️ Warranty Status Report</h4>
               <p className="text-sm text-gray-600">
-                Track devices still under warranty within 4 years of purchase with expiration dates.
+                Complete warranty overview showing both devices in warranty and out of warranty separately.
+              </p>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+              <h4 className="font-semibold text-gray-900 mb-2">🔧 IT Problems Report</h4>
+              <p className="text-sm text-gray-600">
+                All IT support problems reported by employees with names, titles, and brief descriptions.
               </p>
             </div>
           </div>

@@ -13,6 +13,8 @@ export type Database = {
           id: string;
           name: string;
           type: string;
+          barcode: string | null;
+          asset_number: string | null;
           serial_number: string;
           status: string;
           assigned_to: string | null;
@@ -52,6 +54,25 @@ export type Database = {
         };
         Insert: Omit<Database['public']['Tables']['assignments']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['assignments']['Insert']>;
+      };
+      requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          request_type: string;
+          title: string;
+          description: string;
+          priority: string;
+          status: string;
+          device_type: string | null;
+          assigned_to: string | null;
+          resolution_notes: string | null;
+          created_at: string;
+          updated_at: string;
+          resolved_at: string | null;
+        };
+        Insert: Omit<Database['public']['Tables']['requests']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['requests']['Insert']>;
       };
     };
   };
