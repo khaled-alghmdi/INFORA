@@ -98,46 +98,32 @@ const NotificationBell = () => {
     }
 
     if (currentUser?.role === 'admin') {
-      // Admin notifications: pending requests, maintenance, expiring warranties
+      // Admin notifications: NEW pending requests, maintenance, expiring warranties
       
-      // Count pending requests
+      // Count NEW pending requests (created after last viewed)
       const { data: pendingRequests } = await supabase
         .from('requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .select('id, created_at')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
       if (pendingRequests) {
-        count += pendingRequests.length || 0;
+        if (lastViewed) {
+          // Only count requests created AFTER last viewed
+          const newRequests = pendingRequests.filter((req: any) => 
+            new Date(req.created_at) > lastViewed
+          );
+          count += newRequests.length;
+        } else {
+          // Never viewed - count all pending requests
+          count += pendingRequests.length;
+        }
       }
 
-      // Count expiring warranties (within 60 days)
-      const { data: devices } = await supabase
-        .from('devices')
-        .select('warranty_expiry')
-        .not('warranty_expiry', 'is', null);
-
-      if (devices) {
-        const sixtyDaysFromNow = new Date();
-        sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
-
-        const expiringCount = devices.filter((device: any) => {
-          const warrantyDate = new Date(device.warranty_expiry);
-          const today = new Date();
-          return warrantyDate > today && warrantyDate <= sixtyDaysFromNow;
-        }).length;
-
-        count += expiringCount;
-      }
-
-      // Count maintenance devices
-      const { data: maintenanceDevices } = await supabase
-        .from('devices')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'maintenance');
-
-      if (maintenanceDevices) {
-        count += maintenanceDevices.length || 0;
-      }
+      // For admin, we DON'T count warranties and maintenance in badge
+      // Those are shown on the notifications page but don't need real-time alerts
+      // Only NEW pending requests should trigger the badge
+      
     } else {
       // User notifications: request updates, new device assignments
       
