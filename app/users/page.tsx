@@ -38,13 +38,38 @@ const UsersPage = () => {
     initial_password: '',
   });
 
+  const filterUsers = useCallback(() => {
+    let filtered = [...users];
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (user) =>
+          user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (user.employee_id && user.employee_id.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter((user) => user.role === roleFilter);
+    }
+
+    if (statusFilter !== 'all') {
+      const isActive = statusFilter === 'active';
+      filtered = filtered.filter((user) => user.is_active === isActive);
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, roleFilter, statusFilter]);
+
   useEffect(() => {
     fetchUsers();
   }, []);
 
   useEffect(() => {
     filterUsers();
-  }, [users, searchTerm, roleFilter, statusFilter, filterUsers]);
+  }, [filterUsers]);
 
   const fetchUsers = async () => {
     const { data: usersData } = await supabase
@@ -71,31 +96,6 @@ const UsersPage = () => {
       setUsers(usersWithCounts);
     }
   };
-
-  const filterUsers = useCallback(() => {
-    let filtered = [...users];
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (user) =>
-          user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (user.employee_id && user.employee_id.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter((user) => user.role === roleFilter);
-    }
-
-    if (statusFilter !== 'all') {
-      const isActive = statusFilter === 'active';
-      filtered = filtered.filter((user) => user.is_active === isActive);
-    }
-
-    setFilteredUsers(filtered);
-  }, [users, searchTerm, roleFilter, statusFilter]);
 
   const handleCopyEmployeeId = (employeeId: string) => {
     navigator.clipboard.writeText(employeeId);

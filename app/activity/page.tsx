@@ -23,13 +23,33 @@ const ActivityLogPage = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [loading, setLoading] = useState(true);
 
+  const filterActivities = useCallback(() => {
+    let filtered = [...activities];
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (activity) =>
+          activity.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          activity.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          activity.entity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          activity.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter((activity) => activity.type === typeFilter);
+    }
+
+    setFilteredActivities(filtered);
+  }, [activities, searchTerm, typeFilter]);
+
   useEffect(() => {
     fetchActivities();
   }, []);
 
   useEffect(() => {
     filterActivities();
-  }, [activities, searchTerm, typeFilter, filterActivities]);
+  }, [filterActivities]);
 
   const fetchActivities = async () => {
     setLoading(true);
@@ -131,26 +151,6 @@ const ActivityLogPage = () => {
     setActivities(activityList);
     setLoading(false);
   };
-
-  const filterActivities = useCallback(() => {
-    let filtered = [...activities];
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (activity) =>
-          activity.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          activity.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          activity.entity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          activity.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter((activity) => activity.type === typeFilter);
-    }
-
-    setFilteredActivities(filtered);
-  }, [activities, searchTerm, typeFilter]);
 
   const getActivityIcon = (action: string) => {
     if (action.includes('Assigned')) return <UserPlus className="w-6 h-6 text-green-600 dark:text-green-400" />;

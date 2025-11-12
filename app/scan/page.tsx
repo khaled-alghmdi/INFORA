@@ -27,6 +27,7 @@ type Device = {
 
 type UserData = {
   id: string;
+  employee_id: string | null;
   full_name: string;
   email: string;
   department: string;

@@ -50,37 +50,6 @@ const RequestsPage = () => {
     device_type: '',
   });
 
-  useEffect(() => {
-    getCurrentUser();
-    fetchRequests();
-  }, []);
-
-  useEffect(() => {
-    filterRequests();
-  }, [requests, searchTerm, statusFilter, typeFilter, filterRequests]);
-
-  const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setCurrentUserId(user.id);
-    }
-  };
-
-  const fetchRequests = async () => {
-    const { data } = await supabase
-      .from('requests')
-      .select(`
-        *,
-        user:users!requests_user_id_fkey(full_name, email, department),
-        assignee:users!requests_assigned_to_fkey(full_name)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      setRequests(data as Request[]);
-    }
-  };
-
   const filterRequests = useCallback(() => {
     let filtered = [...requests];
 
@@ -103,6 +72,37 @@ const RequestsPage = () => {
 
     setFilteredRequests(filtered);
   }, [requests, searchTerm, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    getCurrentUser();
+    fetchRequests();
+  }, []);
+
+  useEffect(() => {
+    filterRequests();
+  }, [filterRequests]);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setCurrentUserId(user.id);
+    }
+  };
+
+  const fetchRequests = async () => {
+    const { data } = await supabase
+      .from('requests')
+      .select(`
+        *,
+        user:users!requests_user_id_fkey(full_name, email, department),
+        assignee:users!requests_assigned_to_fkey(full_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setRequests(data as Request[]);
+    }
+  };
 
   const handleSubmitRequest = async () => {
     if (!formData.title || !formData.description) {
