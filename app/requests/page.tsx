@@ -134,20 +134,33 @@ const RequestsPage = () => {
       return;
     }
 
+    // Validate device type for device requests
+    if (formData.request_type === 'device_request' && !formData.device_type) {
+      alert('Please select a device type for your request');
+      return;
+    }
+
     if (!currentUserId) {
       alert('User not found. Please login again.');
       return;
     }
 
-    const requestData = {
+    // Build request data with proper null handling
+    const requestData: any = {
       user_id: currentUserId,
       request_type: formData.request_type,
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
       status: 'pending' as RequestStatus,
-      device_type: formData.request_type === 'device_request' ? formData.device_type : null,
     };
+
+    // Only add device_type if it's a device request and has a value
+    if (formData.request_type === 'device_request' && formData.device_type) {
+      requestData.device_type = formData.device_type;
+    } else {
+      requestData.device_type = null;
+    }
 
     console.log('Submitting request:', requestData);
 

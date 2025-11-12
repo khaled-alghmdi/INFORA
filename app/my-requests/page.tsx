@@ -101,20 +101,33 @@ const MyRequestsPage = () => {
       return;
     }
 
+    // Validate device type for device requests
+    if (formData.request_type === 'device_request' && !formData.device_type) {
+      alert('Please select a device type for your request');
+      return;
+    }
+
     if (!currentUser || !currentUser.id) {
       alert('User not found. Please login again.');
       return;
     }
 
-    const requestData = {
+    // Build request data with proper null handling
+    const requestData: any = {
       user_id: currentUser.id,
       request_type: formData.request_type,
       title: formData.title,
       description: formData.description,
       priority: formData.priority,
       status: 'pending',
-      device_type: formData.request_type === 'device_request' ? formData.device_type : null,
     };
+
+    // Only add device_type if it's a device request and has a value
+    if (formData.request_type === 'device_request' && formData.device_type) {
+      requestData.device_type = formData.device_type;
+    } else {
+      requestData.device_type = null;
+    }
 
     console.log('Submitting request:', requestData);
 
@@ -126,6 +139,7 @@ const MyRequestsPage = () => {
       return;
     }
 
+    console.log('Request created successfully:', data);
     setShowRequestModal(false);
     fetchMyRequests(currentUser.id);
     resetForm();
@@ -426,7 +440,7 @@ const MyRequestsPage = () => {
                 {formData.request_type === 'device_request' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      What type of device do you need?
+                      What type of device do you need? <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={formData.device_type}
@@ -434,8 +448,15 @@ const MyRequestsPage = () => {
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700"
                     >
                       <option value="" className="text-gray-500">Select Device Type</option>
-                      <option value="Laptop" className="text-gray-900">Laptop</option>
-                      <option value="Monitor" className="text-gray-900">Monitor</option>
+                      <option value="Laptop" className="text-gray-900">💻 Laptop</option>
+                      <option value="Monitor" className="text-gray-900">🖥️ Monitor</option>
+                      <option value="Desktop" className="text-gray-900">🖥️ Desktop Computer</option>
+                      <option value="Keyboard" className="text-gray-900">⌨️ Keyboard</option>
+                      <option value="Mouse" className="text-gray-900">🖱️ Mouse</option>
+                      <option value="Headset" className="text-gray-900">🎧 Headset</option>
+                      <option value="Phone" className="text-gray-900">📱 Mobile Phone</option>
+                      <option value="Tablet" className="text-gray-900">📱 Tablet</option>
+                      <option value="Other" className="text-gray-900">📦 Other</option>
                     </select>
                   </div>
                 )}
