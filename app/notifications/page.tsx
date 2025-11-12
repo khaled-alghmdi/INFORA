@@ -34,7 +34,30 @@ const NotificationsPage = () => {
     const user = getCurrentUser();
     setCurrentUser(user);
     fetchAlerts(user);
+
+    // Mark notifications as viewed when user opens this page
+    if (user) {
+      markNotificationsAsViewed(user.id);
+    }
   }, []);
+
+  const markNotificationsAsViewed = async (userId: string) => {
+    try {
+      // Update or insert the last viewed timestamp
+      const { error } = await supabase
+        .from('notification_views')
+        .upsert({ 
+          user_id: userId, 
+          last_viewed_at: new Date().toISOString() 
+        });
+
+      if (error) {
+        console.log('Note: notification_views table may not exist yet. Run add-notification-tracking.sql');
+      }
+    } catch (err) {
+      console.log('Notification tracking not enabled');
+    }
+  };
 
   const fetchAlerts = async (user: any) => {
     setLoading(true);

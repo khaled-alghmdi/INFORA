@@ -81,6 +81,22 @@ const NotificationBell = () => {
     const currentUser = getCurrentUser();
     let count = 0;
 
+    // Get last viewed timestamp for this user
+    let lastViewed: Date | null = null;
+    try {
+      const { data: viewData } = await supabase
+        .from('notification_views')
+        .select('last_viewed_at')
+        .eq('user_id', currentUser?.id)
+        .single();
+
+      if (viewData) {
+        lastViewed = new Date(viewData.last_viewed_at);
+      }
+    } catch (err) {
+      // notification_views table doesn't exist yet
+    }
+
     if (currentUser?.role === 'admin') {
       // Admin notifications: pending requests, maintenance, expiring warranties
       
@@ -125,29 +141,49 @@ const NotificationBell = () => {
     } else {
       // User notifications: request updates, new device assignments
       
-      // Count requests with status updates (approved, completed, rejected)
+      // Count requests updated AFTER last viewed
       const { data: updatedRequests } = await supabase
         .from('requests')
-        .select('id')
+        .select('id, updated_at')
         .eq('user_id', currentUser?.id)
         .in('status', ['approved', 'completed', 'rejected']);
 
       if (updatedRequests) {
-        count += updatedRequests.length || 0;
+        if (lastViewed) {
+          // Only count notifications newer than last viewed
+          const newNotifications = updatedRequests.filter((req: any) => 
+            new Date(req.updated_at) > lastViewed
+          );
+          count += newNotifications.length;
+        } else {
+          // Never viewed - count all
+          count += updatedRequests.length;
+        }
       }
 
-      // Count newly assigned devices (assigned in last 7 days)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
+      // Count newly assigned devices AFTER last viewed
       const { data: newDevices } = await supabase
         .from('devices')
-        .select('id')
+        .select('id, assigned_date')
         .eq('assigned_to', currentUser?.id)
-        .gte('assigned_date', sevenDaysAgo.toISOString());
+        .not('assigned_date', 'is', null);
 
       if (newDevices) {
-        count += newDevices.length || 0;
+        if (lastViewed) {
+          // Only count devices assigned after last viewed
+          const newAssignments = newDevices.filter((device: any) =>
+            new Date(device.assigned_date) > lastViewed
+          );
+          count += newAssignments.length;
+        } else {
+          // Count devices assigned in last 7 days
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          const recentDevices = newDevices.filter((device: any) =>
+            new Date(device.assigned_date) > sevenDaysAgo
+          );
+          count += recentDevices.length;
+        }
       }
     }
 
