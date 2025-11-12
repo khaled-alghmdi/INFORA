@@ -31,11 +31,13 @@ export type Database = {
       users: {
         Row: {
           id: string;
+          employee_id: string | null;
           email: string;
           full_name: string;
           department: string;
           role: string;
           is_active: boolean;
+          initial_password: string | null;
           created_at: string;
           updated_at: string;
         };

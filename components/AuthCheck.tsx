@@ -11,7 +11,7 @@ const AuthCheck = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Public routes that don't require authentication
-    const publicRoutes = ['/login', '/signup'];
+    const publicRoutes = ['/login'];
     
     if (publicRoutes.includes(pathname)) {
       setIsChecking(false);
@@ -27,7 +27,7 @@ const AuthCheck = ({ children }: { children: React.ReactNode }) => {
   }, [pathname, router]);
 
   // Show loading state while checking auth
-  if (isChecking && !['/login', '/signup'].includes(pathname)) {
+  if (isChecking && !['/login'].includes(pathname)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

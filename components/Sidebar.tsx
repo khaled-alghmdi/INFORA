@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan } from 'lucide-react';
+import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan, Search, Upload } from 'lucide-react';
 import { getCurrentUser, logout } from '@/lib/auth';
 
 const Sidebar = () => {
@@ -15,17 +15,27 @@ const Sidebar = () => {
     setCurrentUser(getCurrentUser());
   }, []);
 
-  const navItems = [
+  // Admin-only menu items
+  const adminNavItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/devices', label: 'Devices', icon: Monitor },
     { href: '/users', label: 'Users', icon: Users },
-    { href: '/scan', label: 'Quick Scan', icon: Scan },
+    { href: '/scan', label: 'Quick Search', icon: Search },
     { href: '/requests', label: 'Requests', icon: MessageSquare },
-    { href: '/notifications', label: 'Notifications', icon: Bell },
+    { href: '/bulk', label: 'Bulk Operations', icon: Upload },
     { href: '/analytics', label: 'Analytics', icon: TrendingUp },
     { href: '/activity', label: 'Activity Log', icon: Activity },
     { href: '/reports', label: 'Reports', icon: FileText },
   ];
+
+  // Regular user menu items
+  const userNavItems = [
+    { href: '/my-devices', label: 'My Devices', icon: Monitor },
+    { href: '/my-requests', label: 'My Requests', icon: MessageSquare },
+  ];
+
+  // Select navigation based on user role
+  const navItems = currentUser?.role === 'admin' ? adminNavItems : userNavItems;
 
   const handleLogout = () => {
     if (confirm('Are you sure you want to logout?')) {
@@ -34,14 +44,14 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen fixed left-0 top-0 shadow-2xl border-r border-gray-700">
+    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-white min-h-screen fixed left-0 top-0 shadow-2xl border-r border-gray-700 dark:border-gray-800">
       <div className="p-6">
         <div className="flex items-center space-x-3 mb-8 group">
           <div className="relative">
             <div className="absolute inset-0 bg-green-500 rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
             <Image src="/Tamer_logo.png" alt="Tamer Logo" width={45} height={45} className="relative object-contain transform group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 bg-clip-text text-transparent animate-pulse-soft">
+          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-green-600 via-emerald-700 to-emerald-700 bg-clip-text text-transparent animate-pulse-soft">
             INFORA
           </h1>
         </div>
@@ -57,7 +67,7 @@ const Sidebar = () => {
                 style={{ animationDelay: `${index * 50}ms` }}
                 className={`group relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 animate-fade-in ${
                   isActive
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/50'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg shadow-green-500/50'
                     : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:translate-x-1'
                 }`}
               >
@@ -78,8 +88,8 @@ const Sidebar = () => {
         <div className="mb-3">
           <div className="flex items-center space-x-3 mb-4 p-3 rounded-xl bg-gray-800/50 backdrop-blur-sm">
             <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full blur-sm opacity-50"></div>
-              <div className="relative h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-green-400/20">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full blur-sm opacity-50"></div>
+              <div className="relative h-12 w-12 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full flex items-center justify-center shadow-lg ring-2 ring-green-400/20">
                 <span className="text-white font-bold text-lg">
                   {currentUser?.full_name?.charAt(0).toUpperCase() || 'U'}
                 </span>

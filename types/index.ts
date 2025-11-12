@@ -35,11 +35,13 @@ export interface Device {
 
 export interface User {
   id: string;
+  employee_id: string | null;
   email: string;
   full_name: string;
   department: string;
   role: UserRole;
   is_active: boolean;
+  initial_password: string | null;
   created_at: string;
   updated_at: string;
   device_count?: number;

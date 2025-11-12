@@ -112,14 +112,6 @@ You will be redirected to the login page. Click "Sign up now" to create an accou
 
 ## Usage
 
-### Creating an Account
-1. Navigate to the signup page (`/signup`)
-2. Enter your @tamergroup.com email address
-3. Once validated, fill in your full name and department
-4. Create a password (minimum 8 characters)
-5. Click "Create Account"
-6. You'll be redirected to login
-
 ### Logging In
 1. Go to the login page (`/login`)
 2. Enter your email and password
@@ -152,8 +144,6 @@ INFORA/
 │   ├── page.tsx              # Dashboard (Protected)
 │   ├── login/
 │   │   └── page.tsx          # Login page
-│   ├── signup/
-│   │   └── page.tsx          # Sign up page
 │   ├── devices/
 │   │   └── page.tsx          # Devices management (Protected)
 │   ├── users/
@@ -184,9 +174,8 @@ INFORA/
 ### First Time Setup
 
 1. **Create Your Admin Account**:
-   - Go to `/signup`
-   - Use an email ending with `@tamergroup.com`
-   - Fill in your details
+   - Have an administrator create your account through the Users page
+   - Use credentials provided by your administrator
    - Create a strong password
 
 2. **Login**:

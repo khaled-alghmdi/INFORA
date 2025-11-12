@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import AuthCheck from '@/components/AuthCheck';
+import WaveBackground from '@/components/WaveBackground';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 export const metadata: Metadata = {
   title: 'INFORA - IT Device Inventory',
@@ -15,7 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthCheck>{children}</AuthCheck>
+        <ThemeProvider>
+          <WaveBackground />
+          <AuthCheck>{children}</AuthCheck>
+        </ThemeProvider>
       </body>
     </html>
   );

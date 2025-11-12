@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
@@ -78,11 +78,7 @@ const AnalyticsPage = () => {
     recentActivity: [] as any[],
   });
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [timeRange]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
 
     // Fetch all devices
@@ -402,7 +398,11 @@ const AnalyticsPage = () => {
     }
 
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   const formatTime = (hours: number): string => {
     const days = Math.floor(hours / 24);
@@ -417,10 +417,10 @@ const AnalyticsPage = () => {
     return (
       <div className="flex">
         <Sidebar />
-        <main className="ml-64 flex-1 bg-gray-50 min-h-screen p-8">
+        <main className="ml-64 flex-1 min-h-screen p-8">
           <div className="text-center py-20">
-            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-green-500"></div>
-            <p className="mt-4 text-gray-600 text-lg">Loading comprehensive analytics...</p>
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-green-500 dark:border-green-400"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">Loading comprehensive analytics...</p>
           </div>
         </main>
       </div>
@@ -430,7 +430,7 @@ const AnalyticsPage = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 bg-gray-50 min-h-screen p-8">
+      <main className="ml-64 flex-1 min-h-screen p-8">
         <PageHeader
           title="Analytics & Insights"
           description="Comprehensive data-driven insights for better decision making"
@@ -438,7 +438,7 @@ const AnalyticsPage = () => {
 
         {/* Primary KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <Monitor className="w-10 h-10" />
               <span className="text-4xl font-bold">{analytics.totalDevices}</span>
@@ -450,7 +450,7 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <TrendingUp className="w-10 h-10" />
               <span className="text-4xl font-bold">{analytics.utilizationRate}%</span>
@@ -464,7 +464,7 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <Users className="w-10 h-10" />
               <span className="text-4xl font-bold">{analytics.totalUsers}</span>
@@ -476,7 +476,7 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <AlertCircle className="w-10 h-10" />
               <span className="text-4xl font-bold">{analytics.totalRequests}</span>
@@ -491,128 +491,128 @@ const AnalyticsPage = () => {
 
         {/* Secondary KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <Package className="w-6 h-6 text-emerald-600 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{analytics.availableDevices}</p>
-            <p className="text-xs text-gray-600">Available Stock</p>
-            <p className="text-xs text-emerald-600 font-medium mt-1">{analytics.stockAvailability}% Ready</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-4">
+            <Package className="w-6 h-6 text-emerald-600 dark:text-emerald-400 mb-2" />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.availableDevices}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Available Stock</p>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">{analytics.stockAvailability}% Ready</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <Activity className="w-6 h-6 text-blue-600 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{analytics.avgDevicesPerUser}</p>
-            <p className="text-xs text-gray-600">Avg Devices/User</p>
-            <p className="text-xs text-blue-600 font-medium mt-1">Among active users</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-4">
+            <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400 mb-2" />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.avgDevicesPerUser}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Avg Devices/User</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Among active users</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <Clock className="w-6 h-6 text-purple-600 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{analytics.avgResponseTime}</p>
-            <p className="text-xs text-gray-600">Avg Response Time</p>
-            <p className="text-xs text-purple-600 font-medium mt-1">{analytics.requestResolutionRate}% Resolved</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-4">
+            <Clock className="w-6 h-6 text-purple-600 dark:text-purple-400 mb-2" />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.avgResponseTime}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Avg Response Time</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">{analytics.requestResolutionRate}% Resolved</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <Zap className="w-6 h-6 text-yellow-600 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{analytics.requestsThisWeek}</p>
-            <p className="text-xs text-gray-600">Requests This Week</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-4">
+            <Zap className="w-6 h-6 text-yellow-600 dark:text-yellow-400 mb-2" />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.requestsThisWeek}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Requests This Week</p>
             <div className="flex items-center mt-1">
               {analytics.requestsTrend === 'up' ? (
-                <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
+                <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400 mr-1" />
               ) : analytics.requestsTrend === 'down' ? (
                 <TrendingDown className="w-3 h-3 text-red-600 mr-1" />
               ) : null}
-              <p className="text-xs text-gray-600">vs {analytics.requestsLastWeek} last week</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">vs {analytics.requestsLastWeek} last week</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <Shield className="w-6 h-6 text-indigo-600 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{analytics.warrantyStatus.inWarranty}</p>
-            <p className="text-xs text-gray-600">Under Warranty</p>
-            <p className="text-xs text-orange-600 font-medium mt-1">{analytics.warrantyStatus.expiringSoon} expiring soon</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-4">
+            <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mb-2" />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.warrantyStatus.inWarranty}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Under Warranty</p>
+            <p className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">{analytics.warrantyStatus.expiringSoon} expiring soon</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <Box className="w-6 h-6 text-red-600 mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{analytics.criticalStockTypes.length}</p>
-            <p className="text-xs text-gray-600">Critical Stock</p>
-            <p className="text-xs text-red-600 font-medium mt-1">Types with &lt;3 units</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-4">
+            <Box className="w-6 h-6 text-red-600 dark:text-red-400 mb-2" />
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.criticalStockTypes.length}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Critical Stock</p>
+            <p className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Types with &lt;3 units</p>
           </div>
         </div>
 
         {/* Device Age Distribution */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" />
               Device Age Distribution
             </h3>
             <div className="space-y-3">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700 font-medium">New (&lt; 1 year)</span>
-                  <span className="text-gray-900 font-bold">{analytics.deviceAge.new}</span>
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">New (&lt; 1 year)</span>
+                  <span className="text-gray-900 dark:text-white font-bold">{analytics.deviceAge.new}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-green-500 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.new / analytics.totalDevices) * 100}%` }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700 font-medium">Recent (1-2 years)</span>
-                  <span className="text-gray-900 font-bold">{analytics.deviceAge.recent}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-blue-500 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.recent / analytics.totalDevices) * 100}%` }}></div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div className="bg-green-500 dark:bg-green-600 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.new / analytics.totalDevices) * 100}%` }}></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700 font-medium">Old (2-3 years)</span>
-                  <span className="text-gray-900 font-bold">{analytics.deviceAge.old}</span>
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Recent (1-2 years)</span>
+                  <span className="text-gray-900 dark:text-white font-bold">{analytics.deviceAge.recent}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-yellow-500 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.old / analytics.totalDevices) * 100}%` }}></div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div className="bg-blue-500 dark:bg-blue-600 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.recent / analytics.totalDevices) * 100}%` }}></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700 font-medium">Very Old (&gt; 3 years)</span>
-                  <span className="text-gray-900 font-bold">{analytics.deviceAge.veryOld}</span>
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Old (2-3 years)</span>
+                  <span className="text-gray-900 dark:text-white font-bold">{analytics.deviceAge.old}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-red-500 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.veryOld / analytics.totalDevices) * 100}%` }}></div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div className="bg-yellow-500 dark:bg-yellow-600 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.old / analytics.totalDevices) * 100}%` }}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Very Old (&gt; 3 years)</span>
+                  <span className="text-gray-900 dark:text-white font-bold">{analytics.deviceAge.veryOld}</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                  <div className="bg-red-500 dark:bg-red-600 h-3 rounded-full" style={{ width: `${(analytics.deviceAge.veryOld / analytics.totalDevices) * 100}%` }}></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <Shield className="w-5 h-5 mr-2 text-purple-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Shield className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
               Warranty Status Breakdown
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm text-gray-600 mb-1">In Warranty</p>
-                <p className="text-3xl font-bold text-green-600">{analytics.warrantyStatus.inWarranty}</p>
-                <p className="text-xs text-gray-500 mt-1">{Math.round((analytics.warrantyStatus.inWarranty / analytics.totalDevices) * 100)}% of devices</p>
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">In Warranty</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">{analytics.warrantyStatus.inWarranty}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{Math.round((analytics.warrantyStatus.inWarranty / analytics.totalDevices) * 100)}% of devices</p>
               </div>
-              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                <p className="text-sm text-gray-600 mb-1">Expiring Soon</p>
-                <p className="text-3xl font-bold text-orange-600">{analytics.warrantyStatus.expiringSoon}</p>
-                <p className="text-xs text-gray-500 mt-1">Within 60 days</p>
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Expiring Soon</p>
+                <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{analytics.warrantyStatus.expiringSoon}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Within 60 days</p>
               </div>
-              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                <p className="text-sm text-gray-600 mb-1">Expired</p>
-                <p className="text-3xl font-bold text-red-600">{analytics.warrantyStatus.expired}</p>
-                <p className="text-xs text-gray-500 mt-1">Out of warranty</p>
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Expired</p>
+                <p className="text-3xl font-bold text-red-600 dark:text-red-400">{analytics.warrantyStatus.expired}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Out of warranty</p>
               </div>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">No Warranty</p>
-                <p className="text-3xl font-bold text-gray-600">{analytics.warrantyStatus.noWarranty}</p>
-                <p className="text-xs text-gray-500 mt-1">Not tracked</p>
+              <div className="p-4 bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">No Warranty</p>
+                <p className="text-3xl font-bold text-gray-600 dark:text-gray-400">{analytics.warrantyStatus.noWarranty}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Not tracked</p>
               </div>
             </div>
           </div>
@@ -621,26 +621,26 @@ const AnalyticsPage = () => {
         {/* Charts Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Devices by Type */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
               Devices by Type
             </h3>
             <div className="space-y-3">
               {analytics.devicesByType.map((item, index) => (
                 <div key={item.type}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-700 font-medium flex items-center">
-                      <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold mr-2">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium flex items-center">
+                      <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-bold mr-2">
                         {index + 1}
                       </span>
                       {item.type}
                     </span>
-                    <span className="text-gray-900 font-bold">{item.count} ({item.percentage}%)</span>
+                    <span className="text-gray-900 dark:text-white font-bold">{item.count} ({item.percentage}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div
-                      className="bg-blue-500 h-2.5 rounded-full"
+                      className="bg-blue-500 dark:bg-blue-600 h-2.5 rounded-full"
                       style={{ width: `${item.percentage}%` }}
                     ></div>
                   </div>
@@ -650,26 +650,26 @@ const AnalyticsPage = () => {
           </div>
 
           {/* Devices by Status */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2 text-green-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
               Devices by Status
             </h3>
             <div className="space-y-3">
               {analytics.devicesByStatus.map((item) => (
                 <div key={item.status}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-700 font-medium capitalize">{item.status}</span>
-                    <span className="text-gray-900 font-bold">{item.count} ({item.percentage}%)</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium capitalize">{item.status}</span>
+                    <span className="text-gray-900 dark:text-white font-bold">{item.count} ({item.percentage}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div
                       className={`h-2.5 rounded-full ${
                         item.status === 'assigned'
-                          ? 'bg-green-500'
+                          ? 'bg-green-500 dark:bg-green-600'
                           : item.status === 'available'
-                          ? 'bg-blue-500'
-                          : 'bg-yellow-500'
+                          ? 'bg-blue-500 dark:bg-blue-600'
+                          : 'bg-yellow-500 dark:bg-yellow-600'
                       }`}
                       style={{ width: `${item.percentage}%` }}
                     ></div>
@@ -682,87 +682,87 @@ const AnalyticsPage = () => {
 
         {/* Request Analytics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <AlertCircle className="w-5 h-5 mr-2 text-orange-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
               Request Types
             </h3>
             <div className="space-y-3">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Device Requests</p>
-                <p className="text-2xl font-bold text-blue-600">{analytics.deviceRequests}</p>
-                <p className="text-xs text-gray-500 mt-1">Avg: {analytics.avgDeviceResponseTime}</p>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Device Requests</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{analytics.deviceRequests}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Avg: {analytics.avgDeviceResponseTime}</p>
               </div>
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">IT Support</p>
-                <p className="text-2xl font-bold text-purple-600">{analytics.itSupportRequests}</p>
-                <p className="text-xs text-gray-500 mt-1">Avg: {analytics.avgITResponseTime}</p>
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">IT Support</p>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{analytics.itSupportRequests}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Avg: {analytics.avgITResponseTime}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <Activity className="w-5 h-5 mr-2 text-red-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Activity className="w-5 h-5 mr-2 text-red-600 dark:text-red-400" />
               Request Priority
             </h3>
             <div className="space-y-2">
               {analytics.requestsByPriority.map((item) => (
-                <div key={item.priority} className="flex justify-between items-center py-2 border-b">
+                <div key={item.priority} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
                   <span className={`text-sm font-medium capitalize px-2 py-1 rounded ${
-                    item.priority === 'urgent' ? 'bg-red-100 text-red-700' :
-                    item.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                    item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-gray-100 text-gray-700'
+                    item.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                    item.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
+                    item.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                    'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}>
                     {item.priority}
                   </span>
-                  <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">{item.count}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
               Request Status
             </h3>
             <div className="space-y-2">
               {analytics.requestsByStatus.map((item) => (
-                <div key={item.status} className="flex justify-between items-center py-2 border-b">
-                  <span className="text-sm text-gray-700 capitalize">{item.status.replace('_', ' ')}</span>
-                  <span className="text-sm font-bold text-gray-900">{item.count}</span>
+                <div key={item.status} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">{item.status.replace('_', ' ')}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">{item.count}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
-              <p className="text-xs text-gray-600 mb-1">Resolution Rate</p>
-              <p className="text-xl font-bold text-green-600">{analytics.requestResolutionRate}%</p>
+            <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Resolution Rate</p>
+              <p className="text-xl font-bold text-green-600 dark:text-green-400">{analytics.requestResolutionRate}%</p>
             </div>
           </div>
         </div>
 
         {/* Department & Top Users */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-purple-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
               Top 10 Departments by Device Count
             </h3>
             <div className="space-y-3">
               {analytics.devicesByDepartment.map((item, index) => (
                 <div key={item.department} className="flex items-center">
-                  <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm mr-3">
+                  <span className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-sm mr-3">
                     {index + 1}
                   </span>
                   <div className="flex-1">
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-700 font-medium">{item.department}</span>
-                      <span className="text-gray-900 font-bold">{item.count} devices • {item.users} users</span>
+                      <span className="text-gray-700 dark:text-gray-300 font-medium">{item.department}</span>
+                      <span className="text-gray-900 dark:text-white font-bold">{item.count} devices • {item.users} users</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${(item.count / analytics.totalDevices) * 100}%` }}></div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div className="bg-purple-500 dark:bg-purple-600 h-2 rounded-full" style={{ width: `${(item.count / analytics.totalDevices) * 100}%` }}></div>
                     </div>
                   </div>
                 </div>
@@ -770,27 +770,27 @@ const AnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <Award className="w-5 h-5 mr-2 text-yellow-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Award className="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" />
               Top 5 Users by Device Count
             </h3>
             <div className="space-y-3">
               {analytics.topUsers.map((user, index) => (
-                <div key={user.name} className="flex items-center p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg">
+                <div key={user.name} className="flex items-center p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
                   <span className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-3 ${
-                    index === 0 ? 'bg-yellow-400 text-white' :
-                    index === 1 ? 'bg-gray-300 text-white' :
-                    index === 2 ? 'bg-orange-400 text-white' :
-                    'bg-gray-200 text-gray-700'
+                    index === 0 ? 'bg-yellow-400 dark:bg-yellow-500 text-white' :
+                    index === 1 ? 'bg-gray-300 dark:bg-gray-600 text-white' :
+                    index === 2 ? 'bg-orange-400 dark:bg-orange-500 text-white' :
+                    'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}>
                     {index + 1}
                   </span>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-900">{user.name}</p>
-                    <p className="text-xs text-gray-600">{user.department}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{user.name}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{user.department}</p>
                   </div>
-                  <span className="text-xl font-bold text-orange-600">{user.deviceCount}</span>
+                  <span className="text-xl font-bold text-orange-600 dark:text-orange-400">{user.deviceCount}</span>
                 </div>
               ))}
             </div>
@@ -799,17 +799,17 @@ const AnalyticsPage = () => {
 
         {/* Critical Alerts */}
         {analytics.criticalStockTypes.length > 0 && (
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-lg p-6 mb-8">
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-6 mb-8">
             <div className="flex items-start">
-              <AlertCircle className="w-6 h-6 text-red-600 mr-3 flex-shrink-0 mt-1" />
+              <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 mr-3 flex-shrink-0 mt-1" />
               <div>
-                <h3 className="text-lg font-bold text-red-900 mb-2">⚠️ Critical Stock Alert</h3>
-                <p className="text-sm text-red-700 mb-2">
+                <h3 className="text-lg font-bold text-red-900 dark:text-red-300 mb-2">⚠️ Critical Stock Alert</h3>
+                <p className="text-sm text-red-700 dark:text-red-400 mb-2">
                   The following device types have critically low stock (less than 3 units available):
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {analytics.criticalStockTypes.map((type) => (
-                    <span key={type} className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold">
+                    <span key={type} className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-sm font-semibold">
                       {type}
                     </span>
                   ))}
@@ -820,13 +820,13 @@ const AnalyticsPage = () => {
         )}
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
           <div className="space-y-2">
             {analytics.recentActivity.slice(0, 8).map((activity: any) => (
               <div
                 key={activity.id}
-                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex items-center justify-between p-3 hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <div
@@ -841,21 +841,21 @@ const AnalyticsPage = () => {
                     }`}
                   ></div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.title}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {activity.user?.full_name} • {activity.user?.department}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    activity.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    activity.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-blue-100 text-blue-700'
+                    activity.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                    activity.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                    'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                   }`}>
                     {activity.status}
                   </span>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {new Date(activity.created_at).toLocaleDateString()}
                   </p>
                 </div>

@@ -40,6 +40,19 @@ const LoginPage = () => {
         return;
       }
 
+      // Verify password
+      if (userData.initial_password) {
+        if (password !== userData.initial_password) {
+          setError('Invalid email or password');
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        setError('No password set for this account. Please contact the administrator.');
+        setIsLoading(false);
+        return;
+      }
+
       // Store user session in localStorage
       localStorage.setItem('infora_user', JSON.stringify(userData));
       
@@ -55,7 +68,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
         <div className="max-w-md w-full space-y-8">
           {/* Logo and Title */}
           <div className="text-center">
@@ -68,10 +81,10 @@ const LoginPage = () => {
                 className="object-contain"
               />
             </div>
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white">
               Welcome Back
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Sign in to access your IT inventory dashboard
             </p>
           </div>
@@ -89,7 +102,7 @@ const LoginPage = () => {
             <div className="space-y-5">
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -104,7 +117,7 @@ const LoginPage = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-900 dark:text-white dark:bg-gray-800"
                     placeholder="you@tamergroup.com"
                   />
                 </div>
@@ -112,7 +125,7 @@ const LoginPage = () => {
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Password
                 </label>
                 <div className="relative">
@@ -127,7 +140,7 @@ const LoginPage = () => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-gray-900 dark:text-white dark:bg-gray-800"
                     placeholder="Enter your password"
                   />
                   <button
@@ -173,7 +186,7 @@ const LoginPage = () => {
               className={`w-full flex justify-center items-center space-x-2 py-3 px-4 rounded-lg text-white font-semibold transition-all ${
                 isLoading
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02]'
+                  : 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 shadow-lg hover:shadow-xl transform hover:scale-[1.02]'
               }`}
             >
               {isLoading ? (
@@ -190,16 +203,13 @@ const LoginPage = () => {
             </button>
           </form>
 
-          {/* Sign Up Link */}
+          {/* Contact Admin Message */}
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link
-                href="/signup"
-                className="font-semibold text-green-600 hover:text-green-500 transition-colors"
-              >
-                Sign up now
-              </Link>
+              Don&apos;t have an account?{' '}
+              <span className="font-semibold text-green-600">
+                Contact your administrator
+              </span>
             </p>
           </div>
 
@@ -211,7 +221,7 @@ const LoginPage = () => {
       </div>
 
       {/* Right Side - Branding */}
-      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 relative overflow-hidden">
+      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-green-600 via-emerald-700 to-emerald-800 relative overflow-hidden">
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative z-10 flex flex-col justify-center items-center text-white px-12">
           <div className="mb-8">

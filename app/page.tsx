@@ -7,6 +7,8 @@ import PageHeader from '@/components/PageHeader';
 import StatsCard from '@/components/StatsCard';
 import { Monitor, Users, Package, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { getCurrentUser } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 type DashboardStats = {
   totalDevices: number;
@@ -23,6 +25,8 @@ type DeviceByType = {
 };
 
 const Dashboard = () => {
+  const router = useRouter();
+  const [currentUserData, setCurrentUserData] = useState<any>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalDevices: 0,
     assignedDevices: 0,
@@ -36,7 +40,24 @@ const Dashboard = () => {
   const [devicesByStatus, setDevicesByStatus] = useState<{ name: string; value: number }[]>([]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const user = getCurrentUser();
+    setCurrentUserData(user);
+    
+    // Redirect non-admin users to My Devices page
+    if (user && user.role !== 'admin') {
+      router.push('/my-devices');
+      return;
+    }
+  }, [router]);
+
+  useEffect(() => {
+    // Only fetch admin dashboard data if user is admin
+    if (currentUserData?.role === 'admin') {
+      fetchDashboardData();
+    }
+  }, [currentUserData]);
+
+  const fetchDashboardData = async () => {
       // Fetch devices data
       const { data: devices } = await supabase.from('devices').select('*');
       const { data: users } = await supabase.from('users').select('*');
@@ -73,21 +94,14 @@ const Dashboard = () => {
           { name: 'Maintenance', value: maintenanceDevices },
         ]);
       }
-    };
-
-    fetchDashboardData();
-  }, []);
+  };
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b'];
 
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 bg-gradient-to-br from-gray-50 via-white to-green-50/30 min-h-screen p-8 relative overflow-hidden">
-        {/* Background decorations */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-green-100/40 to-emerald-100/40 rounded-full blur-3xl -mr-48 -mt-48"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-teal-100/30 to-green-100/30 rounded-full blur-3xl -ml-48 -mb-48"></div>
-        
+      <main className="ml-64 flex-1 min-h-screen p-8 relative overflow-hidden">
         <div className="relative z-10">
         <PageHeader
           title="Dashboard"
@@ -127,8 +141,8 @@ const Dashboard = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Bar Chart - Devices by Type */}
-          <div className="bg-white rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Devices by Type</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Devices by Type</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={devicesByType}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -148,8 +162,8 @@ const Dashboard = () => {
           </div>
 
           {/* Pie Chart - Devices by Status */}
-          <div className="bg-white rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Devices by Status</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Devices by Status</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -174,24 +188,24 @@ const Dashboard = () => {
 
         {/* Users Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">User Statistics</h3>
-              <div className="bg-gradient-to-br from-green-400 to-emerald-600 p-2 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">User Statistics</h3>
+              <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-2 rounded-lg">
                 <Users className="w-6 h-6 text-white" />
               </div>
             </div>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Users</span>
-                <span className="text-2xl font-bold text-gray-900">{stats.totalUsers}</span>
+                <span className="text-gray-600 dark:text-gray-400">Total Users</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalUsers}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Active Users</span>
-                <span className="text-2xl font-bold text-green-600">{stats.activeUsers}</span>
+                <span className="text-gray-600 dark:text-gray-400">Active Users</span>
+                <span className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.activeUsers}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Inactive Users</span>
+                <span className="text-gray-600 dark:text-gray-400">Inactive Users</span>
                 <span className="text-2xl font-bold text-red-600">
                   {stats.totalUsers - stats.activeUsers}
                 </span>
@@ -199,21 +213,21 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
-              <span className="w-2 h-8 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full"></span>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
+              <span className="w-2 h-8 bg-gradient-to-b from-green-600 to-emerald-700 rounded-full"></span>
               <span>Quick Actions</span>
             </h3>
             <div className="space-y-3">
-              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
+              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <span className="relative font-semibold">Add New Device</span>
               </button>
-              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
+              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <span className="relative font-semibold">Assign Device</span>
               </button>
-              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
+              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <span className="relative font-semibold">Generate Report</span>
               </button>

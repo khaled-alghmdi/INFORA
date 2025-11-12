@@ -2,7 +2,7 @@
 
 ## Overview
 
-INFORA now includes a complete authentication system with login and signup functionality.
+INFORA now includes a complete authentication system with secure login functionality.
 
 ## Features
 
@@ -14,15 +14,6 @@ INFORA now includes a complete authentication system with login and signup funct
 - Beautiful gradient green theme
 - Responsive design with branding panel
 - Error handling and validation
-
-### 📝 Sign Up Page (`/signup`)
-- **Email Domain Validation**: Only `@tamergroup.com` emails are allowed
-- **Progressive Form Display**: Password fields and additional information only appear after valid email is entered
-- Real-time email validation with visual feedback
-- Password strength requirements (minimum 8 characters)
-- Password confirmation matching
-- Success notification with auto-redirect
-- Department and full name fields
 
 ### 🛡️ Protected Routes
 - All dashboard pages require authentication
@@ -39,19 +30,10 @@ INFORA now includes a complete authentication system with login and signup funct
 
 ### New User Registration
 
-1. Navigate to `/signup`
-2. Enter email address ending with `@tamergroup.com`
-3. Once valid email is detected:
-   - Full name field appears
-   - Department field appears
-   - Password fields appear
-4. Fill in all required information
-5. Click "Create Account"
-6. Success message displays
-7. Automatic redirect to login page
-8. Login with credentials
+New users must be created by an administrator through the Users management page (`/users`). 
+Self-registration is not available to maintain security and control over user access.
 
-### Existing User Login
+### User Login
 
 1. Navigate to `/login` (or get redirected automatically)
 2. Enter email and password
@@ -92,7 +74,6 @@ Invalid examples:
 
 ### Public Pages
 - `/login`
-- `/signup`
 
 ### Authentication Functions (lib/auth.ts)
 ```typescript
@@ -103,13 +84,13 @@ requireAuth() // Redirect to login if not authenticated
 ```
 
 ### Database Integration
-- New users are inserted into `users` table
+- Users are managed through the admin panel in the `users` table
 - Login checks against existing users in database
 - Active status is validated on login
 
 ## Security Notes
 
-1. **Email Validation**: Server-side validation ensures only @tamergroup.com emails
+1. **Admin-Controlled Access**: Only administrators can create new user accounts
 2. **Password Requirements**: Minimum 8 characters enforced
 3. **Active Status**: Inactive users cannot login
 4. **Session Management**: Uses localStorage for client-side session
@@ -137,18 +118,8 @@ requireAuth() // Redirect to login if not authenticated
 
 ## Testing the Authentication
 
-### Test Users (from seed data)
-After running the seed migration, you can test with:
-
-```
-Email: admin@tamer.com
-Password: (Create during signup)
-
-Email: john.doe@tamer.com
-Password: (Create during signup)
-```
-
-Note: You'll need to create a new account first since passwords aren't stored in the current implementation. Update the users table to add a password field if needed.
+### Test Users
+Contact your administrator to create a test account with appropriate credentials.
 
 ## Future Enhancements
 
@@ -167,10 +138,9 @@ Potential improvements:
 | Route | Access | Description |
 |-------|--------|-------------|
 | `/login` | Public | Login page |
-| `/signup` | Public | Registration page |
 | `/` | Protected | Dashboard |
 | `/devices` | Protected | Devices management |
-| `/users` | Protected | User management |
+| `/users` | Protected | User management (admin only) |
 | `/reports` | Protected | Reports generation |
 
 ---

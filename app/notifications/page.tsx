@@ -206,7 +206,7 @@ const NotificationsPage = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 bg-gray-50 min-h-screen p-8">
+      <main className="ml-64 flex-1 min-h-screen p-8">
         <PageHeader
           title="Notifications & Alerts"
           description="Monitor system alerts and pending actions"
@@ -214,7 +214,7 @@ const NotificationsPage = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-2">
               <Bell className="w-8 h-8" />
               <span className="text-3xl font-bold">{stats.pendingRequests}</span>
@@ -222,7 +222,7 @@ const NotificationsPage = () => {
             <p className="text-red-100 text-sm">Pending Requests</p>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-2">
               <AlertTriangle className="w-8 h-8" />
               <span className="text-3xl font-bold">{stats.urgentRequests}</span>
@@ -230,7 +230,7 @@ const NotificationsPage = () => {
             <p className="text-orange-100 text-sm">Urgent Requests</p>
           </div>
 
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-2">
               <Clock className="w-8 h-8" />
               <span className="text-3xl font-bold">{stats.expiringWarranties}</span>
@@ -238,7 +238,7 @@ const NotificationsPage = () => {
             <p className="text-yellow-100 text-sm">Expiring Warranties</p>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-2">
               <Wrench className="w-8 h-8" />
               <span className="text-3xl font-bold">{stats.maintenanceDevices}</span>
@@ -248,22 +248,22 @@ const NotificationsPage = () => {
         </div>
 
         {/* Alerts List */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
             <AlertTriangle className="w-6 h-6 mr-2 text-orange-500" />
             Active Alerts
           </h2>
 
           {loading ? (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-              <p className="mt-4 text-gray-600">Loading alerts...</p>
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 dark:border-green-400"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading alerts...</p>
             </div>
           ) : alerts.length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">All Clear!</h3>
-              <p className="text-gray-600">No alerts or pending actions at this time</p>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">All Clear!</h3>
+              <p className="text-gray-600 dark:text-gray-400">No alerts or pending actions at this time</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -304,7 +304,7 @@ const NotificationsPage = () => {
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link
             href="/requests"
-            className="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+            className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
           >
             <Bell className="w-8 h-8 mb-3" />
             <h3 className="text-lg font-semibold mb-2">View All Requests</h3>
@@ -313,7 +313,7 @@ const NotificationsPage = () => {
 
           <Link
             href="/devices"
-            className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+            className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
           >
             <Package className="w-8 h-8 mb-3" />
             <h3 className="text-lg font-semibold mb-2">Device Management</h3>
@@ -322,7 +322,7 @@ const NotificationsPage = () => {
 
           <Link
             href="/reports"
-            className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+            className="bg-gradient-to-br from-green-600 to-emerald-700 text-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
           >
             <CheckCircle className="w-8 h-8 mb-3" />
             <h3 className="text-lg font-semibold mb-2">Generate Reports</h3>
