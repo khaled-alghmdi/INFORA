@@ -134,6 +134,11 @@ const RequestsPage = () => {
       return;
     }
 
+    if (!currentUserId) {
+      alert('User not found. Please login again.');
+      return;
+    }
+
     const requestData = {
       user_id: currentUserId,
       request_type: formData.request_type,
@@ -144,16 +149,21 @@ const RequestsPage = () => {
       device_type: formData.request_type === 'device_request' ? formData.device_type : null,
     };
 
-    const { error } = await supabase.from('requests').insert([requestData]);
+    console.log('Submitting request:', requestData);
 
-    if (!error) {
-      setShowRequestModal(false);
-      fetchRequests();
-      resetForm();
-      alert('Request submitted successfully!');
-    } else {
-      alert('Error submitting request. Please try again.');
+    const { data, error } = await supabase.from('requests').insert([requestData]).select();
+
+    if (error) {
+      console.error('Error submitting request:', error);
+      alert(`Error submitting request: ${error.message}\n\nPlease ensure you have permission to create requests or contact your administrator.`);
+      return;
     }
+
+    console.log('Request created successfully:', data);
+    setShowRequestModal(false);
+    fetchRequests();
+    resetForm();
+    alert('✅ Request submitted successfully!');
   };
 
   const handleUpdateStatus = async (requestId: string, newStatus: RequestStatus) => {
