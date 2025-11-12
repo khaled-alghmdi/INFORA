@@ -65,6 +65,29 @@ const UsersPage = () => {
 
   useEffect(() => {
     fetchUsers();
+
+    // Set up real-time subscription for users
+    const usersChannel = supabase
+      .channel('users_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'users',
+        },
+        (payload) => {
+          console.log('User change detected:', payload);
+          // Refresh users when any change occurs
+          fetchUsers();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(usersChannel);
+    };
   }, []);
 
   useEffect(() => {
@@ -114,6 +137,7 @@ const UsersPage = () => {
       ...formData,
       employee_id: formData.employee_id || null,
       initial_password: formData.initial_password || null,
+      password_changed_at: null, // Force password change on first login
     };
 
     const { error } = await supabase.from('users').insert([userData]);
@@ -134,11 +158,16 @@ const UsersPage = () => {
     if (!selectedUser) return;
 
     // Prepare data
-    const userData = {
+    const userData: any = {
       ...formData,
       employee_id: formData.employee_id || null,
       initial_password: formData.initial_password || null,
     };
+
+    // If password was changed by admin, force user to change it on next login
+    if (formData.initial_password && formData.initial_password !== selectedUser.initial_password) {
+      userData.password_changed_at = null; // Force password change
+    }
 
     const { error } = await supabase
       .from('users')
@@ -155,7 +184,13 @@ const UsersPage = () => {
     fetchUsers();
     resetForm();
     setSelectedUser(null);
-    alert('User updated successfully!');
+    
+    // Notify admin about password change requirement
+    if (formData.initial_password && formData.initial_password !== selectedUser.initial_password) {
+      alert('User updated successfully! The user will be required to change their password on next login.');
+    } else {
+      alert('User updated successfully!');
+    }
   };
 
   const handleDeleteUser = async (id: string) => {

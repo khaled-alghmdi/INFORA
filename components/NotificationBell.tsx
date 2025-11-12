@@ -78,45 +78,77 @@ const NotificationBell = () => {
   }, []);
 
   const fetchNotificationCount = async () => {
+    const currentUser = getCurrentUser();
     let count = 0;
 
-    // Count pending requests
-    const { data: pendingRequests } = await supabase
-      .from('requests')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending');
+    if (currentUser?.role === 'admin') {
+      // Admin notifications: pending requests, maintenance, expiring warranties
+      
+      // Count pending requests
+      const { data: pendingRequests } = await supabase
+        .from('requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
 
-    if (pendingRequests) {
-      count += pendingRequests.length || 0;
-    }
+      if (pendingRequests) {
+        count += pendingRequests.length || 0;
+      }
 
-    // Count expiring warranties (within 60 days)
-    const { data: devices } = await supabase
-      .from('devices')
-      .select('warranty_expiry')
-      .not('warranty_expiry', 'is', null);
+      // Count expiring warranties (within 60 days)
+      const { data: devices } = await supabase
+        .from('devices')
+        .select('warranty_expiry')
+        .not('warranty_expiry', 'is', null);
 
-    if (devices) {
-      const sixtyDaysFromNow = new Date();
-      sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
+      if (devices) {
+        const sixtyDaysFromNow = new Date();
+        sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
 
-      const expiringCount = devices.filter((device: any) => {
-        const warrantyDate = new Date(device.warranty_expiry);
-        const today = new Date();
-        return warrantyDate > today && warrantyDate <= sixtyDaysFromNow;
-      }).length;
+        const expiringCount = devices.filter((device: any) => {
+          const warrantyDate = new Date(device.warranty_expiry);
+          const today = new Date();
+          return warrantyDate > today && warrantyDate <= sixtyDaysFromNow;
+        }).length;
 
-      count += expiringCount;
-    }
+        count += expiringCount;
+      }
 
-    // Count maintenance devices
-    const { data: maintenanceDevices } = await supabase
-      .from('devices')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'maintenance');
+      // Count maintenance devices
+      const { data: maintenanceDevices } = await supabase
+        .from('devices')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'maintenance');
 
-    if (maintenanceDevices) {
-      count += maintenanceDevices.length || 0;
+      if (maintenanceDevices) {
+        count += maintenanceDevices.length || 0;
+      }
+    } else {
+      // User notifications: request updates, new device assignments
+      
+      // Count requests with status updates (approved, completed, rejected)
+      const { data: updatedRequests } = await supabase
+        .from('requests')
+        .select('id')
+        .eq('user_id', currentUser?.id)
+        .in('status', ['approved', 'completed', 'rejected']);
+
+      if (updatedRequests) {
+        count += updatedRequests.length || 0;
+      }
+
+      // Count newly assigned devices (assigned in last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data: newDevices } = await supabase
+        .from('devices')
+        .select('id')
+        .eq('assigned_to', currentUser?.id)
+        .gte('assigned_date', sevenDaysAgo.toISOString());
+
+      if (newDevices) {
+        count += newDevices.length || 0;
+      }
     }
 
     setNotificationCount(count);

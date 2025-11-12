@@ -42,6 +42,7 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   initial_password: string | null;
+  password_changed_at: string | null;
   created_at: string;
   updated_at: string;
   device_count?: number;

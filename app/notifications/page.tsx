@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
 import { Bell, AlertTriangle, Clock, Package, Wrench, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { getCurrentUser } from '@/lib/auth';
 
 type Alert = {
   id: string;
@@ -21,6 +22,7 @@ type Alert = {
 const NotificationsPage = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [stats, setStats] = useState({
     pendingRequests: 0,
     urgentRequests: 0,
@@ -29,12 +31,72 @@ const NotificationsPage = () => {
   });
 
   useEffect(() => {
-    fetchAlerts();
+    const user = getCurrentUser();
+    setCurrentUser(user);
+    fetchAlerts(user);
   }, []);
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = async (user: any) => {
     setLoading(true);
     const alertsList: Alert[] = [];
+
+    // Check if user is admin or regular user
+    const isAdmin = user?.role === 'admin';
+
+    if (!isAdmin) {
+      // ===== USER NOTIFICATIONS =====
+      
+      // 1. Request Status Updates (approved, completed, rejected)
+      const { data: updatedRequests } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('user_id', user?.id)
+        .in('status', ['approved', 'completed', 'rejected'])
+        .order('updated_at', { ascending: false });
+
+      if (updatedRequests) {
+        updatedRequests.forEach((request: any) => {
+          const statusIcon = request.status === 'approved' ? '✅' : request.status === 'completed' ? '🎉' : '❌';
+          alertsList.push({
+            id: `request-${request.id}`,
+            type: 'pending_request',
+            title: `Request ${statusIcon} ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}`,
+            description: `Your request "${request.title}" has been ${request.status}`,
+            severity: request.status === 'approved' ? 'medium' : request.status === 'completed' ? 'low' : 'high',
+            link: '/my-requests',
+            date: request.updated_at,
+          });
+        });
+      }
+
+      // 2. Newly Assigned Devices (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data: newDevices } = await supabase
+        .from('devices')
+        .select('*')
+        .eq('assigned_to', user?.id)
+        .gte('assigned_date', sevenDaysAgo.toISOString());
+
+      if (newDevices && newDevices.length > 0) {
+        alertsList.push({
+          id: 'new-devices',
+          type: 'pending_request',
+          title: '📦 New Device(s) Assigned',
+          description: `You have ${newDevices.length} new device(s) assigned to you`,
+          severity: 'medium',
+          link: '/my-devices',
+          count: newDevices.length,
+        });
+      }
+
+      setLoading(false);
+      setAlerts(alertsList);
+      return;
+    }
+
+    // ===== ADMIN NOTIFICATIONS =====
 
     // 1. Pending Requests
     const { data: pendingRequests } = await supabase

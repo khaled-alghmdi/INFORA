@@ -54,6 +54,48 @@ const DevicesPage = () => {
   useEffect(() => {
     fetchDevices();
     fetchUsers();
+
+    // Set up real-time subscription for devices
+    const devicesChannel = supabase
+      .channel('devices_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'devices',
+        },
+        (payload) => {
+          console.log('Device change detected:', payload);
+          // Refresh devices when any change occurs
+          fetchDevices();
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription for assignments
+    const assignmentsChannel = supabase
+      .channel('assignments_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'assignments',
+        },
+        (payload) => {
+          console.log('Assignment change detected:', payload);
+          // Refresh devices when assignments change
+          fetchDevices();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      supabase.removeChannel(devicesChannel);
+      supabase.removeChannel(assignmentsChannel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

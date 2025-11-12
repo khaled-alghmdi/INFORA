@@ -40,6 +40,29 @@ const MyRequestsPage = () => {
     setCurrentUser(user);
     if (user) {
       fetchMyRequests(user.id);
+
+      // Set up real-time subscription for requests
+      const requestsChannel = supabase
+        .channel('my_requests_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'requests',
+            filter: `user_id=eq.${user.id}`, // Only listen to own requests
+          },
+          (payload) => {
+            console.log('My request change detected:', payload);
+            fetchMyRequests(user.id);
+          }
+        )
+        .subscribe();
+
+      // Cleanup
+      return () => {
+        supabase.removeChannel(requestsChannel);
+      };
     }
   }, []);
 

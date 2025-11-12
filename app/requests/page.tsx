@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
 import { Plus, AlertCircle, Laptop, Search, Filter, CheckCircle, XCircle, Clock, PlayCircle } from 'lucide-react';
+import { getCurrentUser as getAuthUser } from '@/lib/auth';
 
 type RequestType = 'device_request' | 'it_support';
 type RequestStatus = 'pending' | 'in_progress' | 'approved' | 'rejected' | 'completed' | 'closed';
@@ -74,16 +75,39 @@ const RequestsPage = () => {
   }, [requests, searchTerm, statusFilter, typeFilter]);
 
   useEffect(() => {
-    getCurrentUser();
+    getUserId();
     fetchRequests();
+
+    // Set up real-time subscription for requests
+    const requestsChannel = supabase
+      .channel('requests_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'requests',
+        },
+        (payload) => {
+          console.log('Request change detected:', payload);
+          // Refresh requests when any change occurs
+          fetchRequests();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(requestsChannel);
+    };
   }, []);
 
   useEffect(() => {
     filterRequests();
   }, [filterRequests]);
 
-  const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const getUserId = () => {
+    const user = getAuthUser();
     if (user) {
       setCurrentUserId(user.id);
     }

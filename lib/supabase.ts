@@ -38,6 +38,7 @@ export type Database = {
           role: string;
           is_active: boolean;
           initial_password: string | null;
+          password_changed_at: string | null;
           created_at: string;
           updated_at: string;
         };
