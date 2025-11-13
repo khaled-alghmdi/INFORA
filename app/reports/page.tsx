@@ -159,24 +159,36 @@ const ReportsPage = () => {
     doc.text(periodText, 14, 56);
     doc.text(`Total Operations: ${assignments.length}`, 14, 62);
     
-    const tableData = assignments.map((assignment: any) => [
-      new Date(assignment.assigned_date).toLocaleDateString(),
-      assignment.devices?.name || 'N/A',
-      assignment.devices?.asset_number || 'N/A',
-      assignment.devices?.type || 'N/A',
-      assignment.devices?.serial_number || 'N/A',
-      assignment.users?.full_name || 'N/A',
-      assignment.users?.department || 'N/A',
-      assignment.return_date ? 'Returned' : 'Active',
-    ]);
+    const tableData = assignments.map((assignment: any) => {
+      // Determine action type
+      let action = 'Assigned';
+      if (assignment.return_date) {
+        action = `Returned (${new Date(assignment.return_date).toLocaleDateString()})`;
+      }
+      
+      return [
+        new Date(assignment.assigned_date).toLocaleDateString(),
+        assignment.devices?.name || 'N/A',
+        assignment.devices?.asset_number || 'N/A',
+        assignment.devices?.type || 'N/A',
+        assignment.devices?.serial_number || 'N/A',
+        assignment.users?.full_name || 'N/A',
+        assignment.users?.department || 'N/A',
+        action,
+        assignment.return_date ? 'Closed' : 'Active',
+      ];
+    });
 
     autoTable(doc, {
       startY: 68,
-      head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial No.', 'User', 'Department', 'Status']],
+      head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial No.', 'User', 'Department', 'Action', 'Status']],
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [16, 185, 129] },
       styles: { fontSize: 7 },
+      columnStyles: {
+        7: { fontStyle: 'bold' }, // Action column bold
+      },
     });
 
     const fileName = selectedUserId === 'all'
