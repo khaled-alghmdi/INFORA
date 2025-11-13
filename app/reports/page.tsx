@@ -68,7 +68,15 @@ const ReportsPage = () => {
 
   useEffect(() => {
     fetchUsers();
+    preloadLogo();
   }, []);
+
+  const preloadLogo = () => {
+    const img = new Image();
+    img.onload = () => setLogoImage(img);
+    img.onerror = () => console.warn('Logo failed to load');
+    img.src = '/Tamer_logo.png';
+  };
 
   const fetchUsers = async () => {
     const { data } = await supabase
@@ -82,24 +90,15 @@ const ReportsPage = () => {
     }
   };
 
-  // Add logo to PDF header (with async image loading)
-  const addLogoToPDF = async (doc: jsPDF, title: string) => {
-    try {
-      // Try to load and add logo
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
-      
-      // Wait for image to load
-      await new Promise((resolve, reject) => {
-        logoImg.onload = resolve;
-        logoImg.onerror = reject;
-        logoImg.src = '/Tamer_logo.png';
-      });
-      
-      doc.addImage(logoImg, 'PNG', 14, 10, 20, 20);
-    } catch (error) {
-      console.warn('Logo image not loaded, continuing without it:', error);
-      // Continue without logo if it fails
+  // Add logo to PDF header (using preloaded image)
+  const addLogoToPDF = (doc: jsPDF, title: string) => {
+    // Add logo if available
+    if (logoImage) {
+      try {
+        doc.addImage(logoImage, 'PNG', 14, 10, 20, 20);
+      } catch (error) {
+        console.warn('Error adding logo to PDF:', error);
+      }
     }
     
     // Add company name next to logo
@@ -167,7 +166,7 @@ const ReportsPage = () => {
       const reportTitle = selectedUserId === 'all'
         ? 'Operations Report'
         : `Operations Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
-      await addLogoToPDF(doc, reportTitle);
+      addLogoToPDF(doc, reportTitle);
       
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
@@ -292,7 +291,7 @@ const ReportsPage = () => {
     const reportTitle = selectedUserId === 'all'
       ? 'Asset Report - All Assets Grouped by Status'
       : `Asset Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
-    await addLogoToPDF(doc, reportTitle);
+    addLogoToPDF(doc, reportTitle);
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
@@ -378,7 +377,7 @@ const ReportsPage = () => {
     const doc = new jsPDF();
     
     // Add logo and header
-    await addLogoToPDF(doc, 'Available Stock Report');
+    addLogoToPDF(doc, 'Available Stock Report');
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
@@ -456,7 +455,7 @@ const ReportsPage = () => {
     const reportTitle = selectedUserId === 'all'
       ? 'User Devices Report - Users with Devices'
       : `User Devices Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
-    await addLogoToPDF(doc, reportTitle);
+    addLogoToPDF(doc, reportTitle);
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
@@ -535,7 +534,7 @@ const ReportsPage = () => {
     const doc = new jsPDF();
     
     // Add logo and header
-    await addLogoToPDF(doc, 'Warranty Status Report');
+    addLogoToPDF(doc, 'Warranty Status Report');
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
@@ -650,7 +649,7 @@ const ReportsPage = () => {
     const doc = new jsPDF();
     
     // Add logo and header
-    await addLogoToPDF(doc, 'IT Problems Report');
+    addLogoToPDF(doc, 'IT Problems Report');
     
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
