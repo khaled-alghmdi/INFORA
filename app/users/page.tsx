@@ -25,6 +25,7 @@ const UsersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [letterFilter, setLetterFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -62,8 +63,15 @@ const UsersPage = () => {
       filtered = filtered.filter((user) => user.is_active === isActive);
     }
 
+    // Letter filter - filter by first letter of name
+    if (letterFilter !== 'all') {
+      filtered = filtered.filter((user) => 
+        user.full_name.charAt(0).toUpperCase() === letterFilter
+      );
+    }
+
     setFilteredUsers(filtered);
-  }, [users, searchTerm, roleFilter, statusFilter]);
+  }, [users, searchTerm, roleFilter, statusFilter, letterFilter]);
 
   useEffect(() => {
     fetchUsers();
@@ -306,7 +314,7 @@ const UsersPage = () => {
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -337,6 +345,36 @@ const UsersPage = () => {
               <option value="active" className="text-gray-900 dark:text-white">Active</option>
               <option value="inactive" className="text-gray-900 dark:text-white">Inactive</option>
             </select>
+          </div>
+
+          {/* Alphabetical Filter */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Filter by first letter:</p>
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => setLetterFilter('all')}
+                className={`px-2 py-1 text-[10px] font-semibold rounded transition-all ${
+                  letterFilter === 'all'
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                All
+              </button>
+              {Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map((letter) => (
+                <button
+                  key={letter}
+                  onClick={() => setLetterFilter(letter)}
+                  className={`w-6 h-6 text-[10px] font-bold rounded transition-all ${
+                    letterFilter === letter
+                      ? 'bg-green-600 text-white shadow-md scale-110'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400'
+                  }`}
+                >
+                  {letter}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
