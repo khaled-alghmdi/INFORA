@@ -304,16 +304,16 @@ const DevicesPage = () => {
     if (warrantyEndDate >= today) {
       return { 
         status: 'active', 
-        label: 'Under Warranty', 
+        label: 'Active', 
         color: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400',
-        icon: <Shield className="w-3 h-3" />
+        icon: <Shield className="w-2 h-2" />
       };
     } else {
       return { 
         status: 'expired', 
-        label: 'Out of Warranty', 
+        label: 'Expired', 
         color: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400',
-        icon: <ShieldAlert className="w-3 h-3" />
+        icon: <ShieldAlert className="w-2 h-2" />
       };
     }
   };
@@ -401,34 +401,35 @@ const DevicesPage = () => {
 
         {/* Devices Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                   Device
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                   Barcode
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Asset Number
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
+                  Asset
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Serial Number
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
+                  Serial
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Warranty Status
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
+                  Warranty
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Assigned To
+                <th className="px-2 py-1.5 text-left text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
+                  Assigned
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-2 py-1.5 text-center text-[9px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                   Actions
                 </th>
               </tr>
@@ -436,31 +437,31 @@ const DevicesPage = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredDevices.map((device) => (
                 <tr key={device.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{device.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{device.specifications}</div>
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    <div className="text-[11px] font-medium text-gray-900 dark:text-white leading-tight">{device.name}</div>
+                    <div className="text-[9px] text-gray-500 dark:text-gray-400 truncate max-w-[150px] leading-tight">{device.specifications || '-'}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-mono font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    <span className="px-1.5 py-0.5 text-[9px] font-mono font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded">
                       {device.barcode || 'N/A'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-mono font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    <span className="px-1.5 py-0.5 text-[9px] font-mono font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                       {device.asset_number || 'N/A'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-800 dark:text-green-400">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    <span className="px-1.5 py-0.5 text-[9px] font-semibold rounded-full bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-800 dark:text-green-400">
                       {device.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <td className="px-2 py-1.5 whitespace-nowrap text-[10px] text-gray-900 dark:text-white font-mono">
                     {device.serial_number}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
                     <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                      className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-full ${
                         device.status === 'available'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                           : device.status === 'assigned'
@@ -471,24 +472,24 @@ const DevicesPage = () => {
                       {device.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
                     {(() => {
                       const warrantyStatus = getWarrantyStatus(device.purchase_date);
                       return (
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full ${warrantyStatus.color}`}>
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold rounded-full ${warrantyStatus.color}`}>
                           {warrantyStatus.icon}
                           <span>{warrantyStatus.label}</span>
                         </span>
                       );
                     })()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
                     {device.assignee_name ? (
                       <div>
-                        <div className="text-sm text-gray-900 dark:text-white">{device.assignee_name}</div>
+                        <div className="text-[10px] text-gray-900 dark:text-white font-medium leading-tight">{device.assignee_name}</div>
                         <button
                           onClick={() => handleUnassignDevice(device.id)}
-                          className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          className="text-[9px] text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                         >
                           Unassign
                         </button>
@@ -496,25 +497,27 @@ const DevicesPage = () => {
                     ) : (
                       <button
                         onClick={() => openAssignModal(device)}
-                        className="text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium"
+                        className="text-[10px] text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium"
                       >
                         Assign
                       </button>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex space-x-2">
+                  <td className="px-2 py-1.5 whitespace-nowrap">
+                    <div className="flex gap-1 justify-center">
                       <button
                         onClick={() => openEditModal(device)}
-                        className="text-green-600 dark:text-green-400 hover:text-green-800"
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 p-0.5"
+                        title="Edit"
                       >
-                        <Edit className="w-5 h-5" />
+                        <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDeleteDevice(device.id)}
-                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 p-0.5"
+                        title="Delete"
                       >
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -522,6 +525,7 @@ const DevicesPage = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Add Device Modal */}

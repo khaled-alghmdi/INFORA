@@ -245,17 +245,17 @@ const RequestsPage = () => {
   const getStatusIcon = (status: RequestStatus) => {
     switch (status) {
       case 'pending':
-        return <Clock className="w-4 h-4" />;
+        return <Clock className="w-2.5 h-2.5" />;
       case 'in_progress':
-        return <PlayCircle className="w-4 h-4" />;
+        return <PlayCircle className="w-2.5 h-2.5" />;
       case 'approved':
       case 'completed':
-        return <CheckCircle className="w-4 h-4" />;
+        return <CheckCircle className="w-2.5 h-2.5" />;
       case 'rejected':
       case 'closed':
-        return <XCircle className="w-4 h-4" />;
+        return <XCircle className="w-2.5 h-2.5" />;
       default:
-        return <AlertCircle className="w-4 h-4" />;
+        return <AlertCircle className="w-2.5 h-2.5" />;
     }
   };
 
@@ -329,82 +329,82 @@ const RequestsPage = () => {
             filteredRequests.map((request) => (
               <div
                 key={request.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
               >
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
+                    <div className="flex items-center space-x-2 mb-1.5">
                       {request.request_type === 'device_request' ? (
-                        <Laptop className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <Laptop className="w-4 h-4 text-green-600 dark:text-green-400" />
                       ) : (
-                        <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       )}
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{request.title}</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{request.title}</h3>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 mb-3">{request.description}</p>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[11px] text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{request.description}</p>
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span
-                        className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                        className={`inline-flex items-center space-x-0.5 px-2 py-0.5 rounded-full text-[9px] font-semibold ${getStatusColor(
                           request.status
                         )}`}
                       >
                         {getStatusIcon(request.status)}
-                        <span className="ml-1">{request.status.replace('_', ' ').toUpperCase()}</span>
+                        <span className="ml-0.5">{request.status.replace('_', ' ').toUpperCase()}</span>
                       </span>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${getPriorityColor(
                           request.priority
                         )}`}
                       >
                         {request.priority.toUpperCase()}
                       </span>
-                      <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-semibold">
-                        {request.request_type === 'device_request' ? '💻 Device Request' : '🔧 IT Support'}
+                      <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-[9px] font-semibold">
+                        {request.request_type === 'device_request' ? '💻 Device' : '🔧 Support'}
                       </span>
                       {request.device_type && (
-                        <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-xs font-semibold">
+                        <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-[9px] font-semibold">
                           {request.device_type}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="text-right ml-3">
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">
                       {new Date(request.created_at).toLocaleDateString()}
                     </p>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
+                    <p className="text-[11px] font-medium text-gray-900 dark:text-white mt-0.5">
                       {request.user?.full_name || 'Unknown User'}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{request.user?.department}</p>
+                    <p className="text-[9px] text-gray-500 dark:text-gray-400">{request.user?.department}</p>
                   </div>
                 </div>
 
                 {/* Admin Actions */}
-                <div className="border-t pt-4 mt-4">
+                <div className="border-t pt-2 mt-2">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-[10px] text-gray-600 dark:text-gray-400">
                       {request.assignee && (
-                        <span>Assigned to: <strong>{request.assignee.full_name}</strong></span>
+                        <span>Assigned: <strong>{request.assignee.full_name}</strong></span>
                       )}
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex gap-1.5">
                       {request.status === 'pending' && (
                         <>
                           <button
                             onClick={() => handleUpdateStatus(request.id, 'in_progress')}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                            className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-[10px] font-medium"
                           >
                             Start
                           </button>
                           <button
                             onClick={() => handleUpdateStatus(request.id, 'approved')}
-                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                            className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-[10px] font-medium"
                           >
                             Approve
                           </button>
                           <button
                             onClick={() => handleUpdateStatus(request.id, 'rejected')}
-                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                            className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-[10px] font-medium"
                           >
                             Reject
                           </button>
@@ -413,7 +413,7 @@ const RequestsPage = () => {
                       {request.status === 'in_progress' && (
                         <button
                           onClick={() => handleUpdateStatus(request.id, 'completed')}
-                          className="px-3 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 text-sm"
+                          className="px-2 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 text-[10px] font-medium"
                         >
                           Complete
                         </button>
@@ -421,7 +421,7 @@ const RequestsPage = () => {
                       {(request.status === 'approved' || request.status === 'completed') && (
                         <button
                           onClick={() => handleUpdateStatus(request.id, 'closed')}
-                          className="px-3 py-1 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-500 text-sm"
+                          className="px-2 py-1 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-500 text-[10px] font-medium"
                         >
                           Close
                         </button>
