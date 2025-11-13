@@ -31,7 +31,9 @@ const UsersPage = () => {
   const [formData, setFormData] = useState({
     employee_id: '',
     email: '',
-    full_name: '',
+    first_name: '',
+    middle_name: '',
+    last_name: '',
     department: '',
     role: 'user',
     is_active: true,
@@ -126,16 +128,29 @@ const UsersPage = () => {
   };
 
   const handleAddUser = async () => {
+    // Validate required fields
+    if (!formData.first_name.trim() || !formData.middle_name.trim()) {
+      alert('First name and middle name are required!');
+      return;
+    }
+
     // Warn if no password is set
     if (!formData.initial_password) {
       const confirmed = confirm('⚠️ Warning: No password set! This user will not be able to login.\n\nDo you want to continue without a password?');
       if (!confirmed) return;
     }
 
+    // Combine name fields into full_name
+    const full_name = `${formData.first_name.trim()} ${formData.middle_name.trim()}${formData.last_name.trim() ? ' ' + formData.last_name.trim() : ''}`;
+
     // Prepare data
     const userData = {
-      ...formData,
       employee_id: formData.employee_id || null,
+      email: formData.email,
+      full_name: full_name,
+      department: formData.department,
+      role: formData.role,
+      is_active: formData.is_active,
       initial_password: formData.initial_password || null,
       password_changed_at: null, // Force password change on first login
     };
@@ -157,10 +172,23 @@ const UsersPage = () => {
   const handleEditUser = async () => {
     if (!selectedUser) return;
 
+    // Validate required fields
+    if (!formData.first_name.trim() || !formData.middle_name.trim()) {
+      alert('First name and middle name are required!');
+      return;
+    }
+
+    // Combine name fields into full_name
+    const full_name = `${formData.first_name.trim()} ${formData.middle_name.trim()}${formData.last_name.trim() ? ' ' + formData.last_name.trim() : ''}`;
+
     // Prepare data
     const userData: any = {
-      ...formData,
       employee_id: formData.employee_id || null,
+      email: formData.email,
+      full_name: full_name,
+      department: formData.department,
+      role: formData.role,
+      is_active: formData.is_active,
       initial_password: formData.initial_password || null,
     };
 
@@ -218,7 +246,9 @@ const UsersPage = () => {
     setFormData({
       employee_id: '',
       email: '',
-      full_name: '',
+      first_name: '',
+      middle_name: '',
+      last_name: '',
       department: '',
       role: 'user',
       is_active: true,
@@ -228,10 +258,19 @@ const UsersPage = () => {
 
   const openEditModal = (user: User) => {
     setSelectedUser(user);
+    
+    // Split full_name into parts
+    const nameParts = user.full_name.trim().split(' ');
+    const first_name = nameParts[0] || '';
+    const middle_name = nameParts[1] || '';
+    const last_name = nameParts.slice(2).join(' ') || '';
+    
     setFormData({
       employee_id: user.employee_id || '',
       email: user.email,
-      full_name: user.full_name,
+      first_name: first_name,
+      middle_name: middle_name,
+      last_name: last_name,
       department: user.department,
       role: user.role,
       is_active: user.is_active,
@@ -449,16 +488,45 @@ const UsersPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add New User</h2>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.first_name}
+                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                      placeholder="First"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Middle Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.middle_name}
+                      onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })}
+                      placeholder="Middle"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.last_name}
+                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      placeholder="Last"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -556,16 +624,45 @@ const UsersPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Edit User</h2>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.first_name}
+                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                      placeholder="First"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Middle Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.middle_name}
+                      onChange={(e) => setFormData({ ...formData, middle_name: e.target.value })}
+                      placeholder="Middle"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.last_name}
+                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      placeholder="Last"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

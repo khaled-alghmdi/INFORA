@@ -39,11 +39,22 @@ type UserData = {
   totalRequests: number;
 };
 
+type UserSearchResult = {
+  id: string;
+  employee_id: string | null;
+  full_name: string;
+  email: string;
+  department: string;
+  role: string;
+  is_active: boolean;
+};
+
 const ScanPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchMode, setSearchMode] = useState<'device' | 'user'>('device');
   const [device, setDevice] = useState<Device | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [scanning, setScanning] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -89,6 +100,7 @@ const ScanPage = () => {
     setMessage(null);
     setDevice(null);
     setUserData(null);
+    setUserSearchResults([]);
 
     if (searchMode === 'device') {
       // Search for device by barcode, asset_number, or serial_number
@@ -152,44 +164,79 @@ const ScanPage = () => {
         return;
       }
 
-      // If multiple users found, use the first one
+      // If multiple users found, show selection list
+      if (usersFound.length > 1) {
+        setUserSearchResults(usersFound);
+        setMessage({ 
+          type: 'success', 
+          text: `Found ${usersFound.length} matching users. Select one to view details.` 
+        });
+        setScanning(false);
+        return;
+      }
+
+      // If only one user found, load their full data
       const foundUser = usersFound[0];
-
-      // Fetch user's devices
-      const { data: userDevices } = await supabase
-        .from('devices')
-        .select('*')
-        .eq('assigned_to', foundUser.id);
-
-      // Fetch user's requests
-      const { data: userRequests } = await supabase
-        .from('requests')
-        .select('*')
-        .eq('user_id', foundUser.id)
-        .order('created_at', { ascending: false });
-
-      const completeUserData: UserData = {
-        ...foundUser,
-        devices: userDevices || [],
-        requests: userRequests || [],
-        totalDevices: userDevices?.length || 0,
-        totalRequests: userRequests?.length || 0,
-      };
-
-      setUserData(completeUserData);
-      setMessage({ 
-        type: 'success', 
-        text: `User found: ${foundUser.full_name}${usersFound.length > 1 ? ` (+${usersFound.length - 1} more matches)` : ''}` 
-      });
-
-      // Add to search history
-      setScanHistory(prev => [{
-        device: foundUser.full_name,
-        barcode: searchTerm,
-        timestamp: new Date().toISOString(),
-        status: foundUser.is_active ? 'active' : 'inactive',
-      }, ...prev.slice(0, 9)]);
+      await loadUserDetails(foundUser.id);
     }
+
+    setScanning(false);
+  };
+
+  const loadUserDetails = async (userId: string) => {
+    setScanning(true);
+    
+    // Fetch user data
+    const { data: foundUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (!foundUser) {
+      setMessage({ 
+        type: 'error', 
+        text: 'Error loading user details.' 
+      });
+      setScanning(false);
+      return;
+    }
+
+    // Fetch user's devices
+    const { data: userDevices } = await supabase
+      .from('devices')
+      .select('*')
+      .eq('assigned_to', foundUser.id);
+
+    // Fetch user's requests
+    const { data: userRequests } = await supabase
+      .from('requests')
+      .select('*')
+      .eq('user_id', foundUser.id)
+      .order('created_at', { ascending: false });
+
+    const completeUserData: UserData = {
+      ...foundUser,
+      devices: userDevices || [],
+      requests: userRequests || [],
+      totalDevices: userDevices?.length || 0,
+      totalRequests: userRequests?.length || 0,
+    };
+
+    setUserData(completeUserData);
+    setUserSearchResults([]); // Clear search results
+    setMessage({ 
+      type: 'success', 
+      text: `User found: ${foundUser.full_name}` 
+    });
+
+    // Add to search history
+    setScanHistory(prev => [{
+      device: foundUser.full_name,
+      barcode: searchTerm,
+      timestamp: new Date().toISOString(),
+      status: foundUser.is_active ? 'active' : 'inactive',
+    }, ...prev.slice(0, 9)]);
 
     setScanning(false);
   };
@@ -319,6 +366,7 @@ const ScanPage = () => {
     setSearchTerm('');
     setDevice(null);
     setUserData(null);
+    setUserSearchResults([]);
     searchInputRef.current?.focus();
   };
 
@@ -480,6 +528,80 @@ const ScanPage = () => {
                 </div>
               )}
             </div>
+
+            {/* Multiple User Search Results */}
+            {userSearchResults.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Select User ({userSearchResults.length} found)
+                  </h3>
+                  <button
+                    onClick={resetScan}
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline"
+                  >
+                    New Search
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {userSearchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => loadUserDetails(user.id)}
+                      className="w-full text-left p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg hover:from-purple-100 hover:to-indigo-100 dark:hover:from-purple-900/30 dark:hover:to-indigo-900/30 hover:border-purple-300 dark:hover:border-purple-700 transition-all group"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                            <h4 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                              {user.full_name}
+                            </h4>
+                          </div>
+                          
+                          {user.employee_id && (
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                              <span className="font-semibold">Employee ID:</span> {user.employee_id}
+                            </p>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300">{user.email}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Department</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300">{user.department}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                              user.is_active 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            }`}>
+                              {user.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                            <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 capitalize">
+                              {user.role}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="ml-4 text-purple-600 dark:text-purple-400 group-hover:translate-x-1 transition-transform">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Device Details */}
             {device && (
