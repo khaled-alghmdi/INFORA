@@ -112,136 +112,148 @@ const ReportsPage = () => {
 
   // 1. Operations Report - All operations filtered by date range
   const generateOperationsReport = async () => {
-    // ENHANCED: Fetch multiple sources of operations
-    let assignmentsQuery = supabase
-      .from('assignments')
-      .select('*, devices(name, type, serial_number, asset_number), users(full_name, department)')
-      .order('assigned_date', { ascending: false });
+    try {
+      // ENHANCED: Fetch multiple sources of operations
+      let assignmentsQuery = supabase
+        .from('assignments')
+        .select('*, devices(name, type, serial_number, asset_number), users(full_name, department)')
+        .order('assigned_date', { ascending: false });
 
-    // Apply date filters if provided
-    if (startDate) {
-      assignmentsQuery = assignmentsQuery.gte('assigned_date', new Date(startDate).toISOString());
-    }
-    if (endDate) {
-      const endDateTime = new Date(endDate);
-      endDateTime.setHours(23, 59, 59, 999);
-      assignmentsQuery = assignmentsQuery.lte('assigned_date', endDateTime.toISOString());
-    }
+      // Apply date filters if provided
+      if (startDate) {
+        assignmentsQuery = assignmentsQuery.gte('assigned_date', new Date(startDate).toISOString());
+      }
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        assignmentsQuery = assignmentsQuery.lte('assigned_date', endDateTime.toISOString());
+      }
 
-    // Filter by specific user if selected
-    if (selectedUserId !== 'all') {
-      assignmentsQuery = assignmentsQuery.eq('user_id', selectedUserId);
-    }
+      // Filter by specific user if selected
+      if (selectedUserId !== 'all') {
+        assignmentsQuery = assignmentsQuery.eq('user_id', selectedUserId);
+      }
 
-    const { data: assignments } = await assignmentsQuery;
-
-    if (!assignments || assignments.length === 0) {
-      alert('No operations found for the selected criteria.');
-      return;
-    }
-
-    const doc = new jsPDF();
-    
-    // Add logo and header
-    const reportTitle = selectedUserId === 'all'
-      ? 'Operations Report'
-      : `Operations Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
-    addLogoToPDF(doc, reportTitle);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
-    
-    const periodText = startDate && endDate
-      ? `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
-      : startDate
-      ? `Period: From ${new Date(startDate).toLocaleDateString()}`
-      : endDate
-      ? `Period: Until ${new Date(endDate).toLocaleDateString()}`
-      : 'Period: All Time';
-    
-    // Create comprehensive operations list with all actions FIRST
-    const operations: any[] = [];
-    
-    assignments.forEach((assignment: any) => {
-      // Assignment action
-      operations.push({
-        date: assignment.assigned_date,
-        device: assignment.devices?.name || 'N/A',
-        asset: assignment.devices?.asset_number || 'N/A',
-        type: assignment.devices?.type || 'N/A',
-        serial: assignment.devices?.serial_number || 'N/A',
-        user: assignment.users?.full_name || 'N/A',
-        department: assignment.users?.department || 'N/A',
-        action: '✓ Device Assigned',
-        status: 'Completed',
-        notes: assignment.notes || '-',
-      });
+      const { data: assignments, error: fetchError } = await assignmentsQuery;
       
-      // Return action (if exists)
-      if (assignment.return_date) {
+      if (fetchError) {
+        console.error('Database fetch error:', fetchError);
+        alert(`Database error: ${fetchError.message}`);
+        return;
+      }
+
+      if (!assignments || assignments.length === 0) {
+        alert('No operations found for the selected criteria.');
+        return;
+      }
+
+      const doc = new jsPDF();
+      
+      // Add logo and header
+      const reportTitle = selectedUserId === 'all'
+        ? 'Operations Report'
+        : `Operations Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
+      addLogoToPDF(doc, reportTitle);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
+      
+      const periodText = startDate && endDate
+        ? `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
+        : startDate
+        ? `Period: From ${new Date(startDate).toLocaleDateString()}`
+        : endDate
+        ? `Period: Until ${new Date(endDate).toLocaleDateString()}`
+        : 'Period: All Time';
+      
+      // Create comprehensive operations list with all actions FIRST
+      const operations: any[] = [];
+      
+      assignments.forEach((assignment: any) => {
+        // Assignment action
         operations.push({
-          date: assignment.return_date,
+          date: assignment.assigned_date,
           device: assignment.devices?.name || 'N/A',
           asset: assignment.devices?.asset_number || 'N/A',
           type: assignment.devices?.type || 'N/A',
           serial: assignment.devices?.serial_number || 'N/A',
           user: assignment.users?.full_name || 'N/A',
           department: assignment.users?.department || 'N/A',
-          action: '↩ Device Returned',
+          action: '✓ Device Assigned',
           status: 'Completed',
-          notes: 'Device returned to inventory',
+          notes: assignment.notes || '-',
         });
-      }
-    });
-    
-    // Sort all operations by date (newest first)
-    operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    // NOW we can display the counts
-    doc.text(periodText, 14, 56);
-    doc.text(`Total Assignments: ${assignments.length}`, 14, 62);
-    doc.text(`Total Operations (including returns): ${operations.length}`, 14, 68);
-    
-    const tableData = operations.map((op: any) => [
-      new Date(op.date).toLocaleDateString(),
-      op.device,
-      op.asset,
-      op.type,
-      op.serial,
-      op.user,
-      op.department,
-      op.action,
-      op.status,
-      op.notes,
-    ]);
+        
+        // Return action (if exists)
+        if (assignment.return_date) {
+          operations.push({
+            date: assignment.return_date,
+            device: assignment.devices?.name || 'N/A',
+            asset: assignment.devices?.asset_number || 'N/A',
+            type: assignment.devices?.type || 'N/A',
+            serial: assignment.devices?.serial_number || 'N/A',
+            user: assignment.users?.full_name || 'N/A',
+            department: assignment.users?.department || 'N/A',
+            action: '↩ Device Returned',
+            status: 'Completed',
+            notes: 'Device returned to inventory',
+          });
+        }
+      });
+      
+      // Sort all operations by date (newest first)
+      operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      // NOW we can display the counts
+      doc.text(periodText, 14, 56);
+      doc.text(`Total Assignments: ${assignments.length}`, 14, 62);
+      doc.text(`Total Operations (including returns): ${operations.length}`, 14, 68);
+      
+      const tableData = operations.map((op: any) => [
+        new Date(op.date).toLocaleDateString(),
+        op.device,
+        op.asset,
+        op.type,
+        op.serial,
+        op.user,
+        op.department,
+        op.action,
+        op.status,
+        op.notes,
+      ]);
 
-    autoTable(doc, {
-      startY: 74,
-      head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial', 'User', 'Dept', 'Action', 'Status', 'Notes']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [16, 185, 129], fontSize: 8, fontStyle: 'bold' },
-      styles: { fontSize: 6, cellPadding: 2 },
-      columnStyles: {
-        0: { cellWidth: 18 }, // Date
-        1: { cellWidth: 25 }, // Device
-        2: { cellWidth: 18 }, // Asset
-        3: { cellWidth: 15 }, // Type
-        4: { cellWidth: 22 }, // Serial
-        5: { cellWidth: 22 }, // User
-        6: { cellWidth: 20 }, // Dept
-        7: { cellWidth: 25, fontStyle: 'bold', halign: 'center' }, // Action - BOLD
-        8: { cellWidth: 15, halign: 'center' }, // Status
-        9: { cellWidth: 20 }, // Notes
-      },
-    });
+      autoTable(doc, {
+        startY: 74,
+        head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial', 'User', 'Dept', 'Action', 'Status', 'Notes']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [16, 185, 129], fontSize: 8, fontStyle: 'bold' },
+        styles: { fontSize: 6, cellPadding: 2 },
+        columnStyles: {
+          0: { cellWidth: 18 }, // Date
+          1: { cellWidth: 25 }, // Device
+          2: { cellWidth: 18 }, // Asset
+          3: { cellWidth: 15 }, // Type
+          4: { cellWidth: 22 }, // Serial
+          5: { cellWidth: 22 }, // User
+          6: { cellWidth: 20 }, // Dept
+          7: { cellWidth: 25, fontStyle: 'bold', halign: 'center' }, // Action - BOLD
+          8: { cellWidth: 15, halign: 'center' }, // Status
+          9: { cellWidth: 20 }, // Notes
+        },
+      });
 
-    const fileName = selectedUserId === 'all'
-      ? `operations_report_${new Date().toISOString().split('T')[0]}.pdf`
-      : `operations_report_${users.find(u => u.id === selectedUserId)?.full_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-    
-    doc.save(fileName);
+      const fileName = selectedUserId === 'all'
+        ? `operations_report_${new Date().toISOString().split('T')[0]}.pdf`
+        : `operations_report_${users.find(u => u.id === selectedUserId)?.full_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Error in generateOperationsReport:', error);
+      alert(`Error generating report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
+    }
   };
 
   // 2. Asset Report - All assets grouped by status
