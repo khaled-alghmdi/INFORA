@@ -155,7 +155,7 @@ const ReportsPage = () => {
           serial: assignment.devices?.serial_number || 'N/A',
           user: assignment.users?.full_name || 'N/A',
           department: assignment.users?.department || 'N/A',
-          action: '✓ Device Assigned',
+          action: 'ASSIGNED',
           status: 'Completed',
           notes: assignment.notes || '-',
         });
@@ -170,7 +170,7 @@ const ReportsPage = () => {
             serial: assignment.devices?.serial_number || 'N/A',
             user: assignment.users?.full_name || 'N/A',
             department: assignment.users?.department || 'N/A',
-            action: '↩ Device Returned',
+            action: 'RETURNED',
             status: 'Completed',
             notes: 'Device returned to inventory',
           });
