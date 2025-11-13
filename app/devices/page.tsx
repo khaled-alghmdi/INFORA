@@ -268,6 +268,26 @@ const DevicesPage = () => {
   };
 
   const handleUnassignDevice = async (deviceId: string) => {
+    // FIXED: Update assignments table with return_date
+    // First, find the active assignment for this device
+    const { data: activeAssignment } = await supabase
+      .from('assignments')
+      .select('*')
+      .eq('device_id', deviceId)
+      .is('return_date', null)
+      .order('assigned_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Update the assignment with return date
+    if (activeAssignment) {
+      await supabase
+        .from('assignments')
+        .update({ return_date: new Date().toISOString() })
+        .eq('id', activeAssignment.id);
+    }
+
+    // Then update the device
     const { error } = await supabase
       .from('devices')
       .update({
