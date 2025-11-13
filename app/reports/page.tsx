@@ -152,19 +152,15 @@ const ReportsPage = () => {
     doc.setTextColor(80, 80, 80);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
     
-    const periodText = startDate && endDate 
+    const periodText = startDate && endDate
       ? `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
-      : startDate 
+      : startDate
       ? `Period: From ${new Date(startDate).toLocaleDateString()}`
       : endDate
       ? `Period: Until ${new Date(endDate).toLocaleDateString()}`
       : 'Period: All Time';
     
-    doc.text(periodText, 14, 56);
-    doc.text(`Total Assignments: ${assignments.length}`, 14, 62);
-    doc.text(`Total Operations (including returns): ${operations.length}`, 14, 68);
-    
-    // Create comprehensive operations list with all actions
+    // Create comprehensive operations list with all actions FIRST
     const operations: any[] = [];
     
     assignments.forEach((assignment: any) => {
@@ -201,6 +197,11 @@ const ReportsPage = () => {
     
     // Sort all operations by date (newest first)
     operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    // NOW we can display the counts
+    doc.text(periodText, 14, 56);
+    doc.text(`Total Assignments: ${assignments.length}`, 14, 62);
+    doc.text(`Total Operations (including returns): ${operations.length}`, 14, 68);
     
     const tableData = operations.map((op: any) => [
       new Date(op.date).toLocaleDateString(),
