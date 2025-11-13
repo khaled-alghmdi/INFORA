@@ -142,27 +142,7 @@ const ReportsPage = () => {
         return;
       }
 
-      const doc = new jsPDF();
-      
-      // Add logo and header
-      const reportTitle = selectedUserId === 'all'
-        ? 'Operations Report'
-        : `Operations Report - ${users.find(u => u.id === selectedUserId)?.full_name || 'User'}`;
-      addLogoToPDF(doc, reportTitle);
-      
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
-      
-      const periodText = startDate && endDate
-        ? `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`
-        : startDate
-        ? `Period: From ${new Date(startDate).toLocaleDateString()}`
-        : endDate
-        ? `Period: Until ${new Date(endDate).toLocaleDateString()}`
-        : 'Period: All Time';
-      
-      // Create comprehensive operations list with all actions FIRST
+      // Create comprehensive operations list with all actions
       const operations: any[] = [];
       
       assignments.forEach((assignment: any) => {
@@ -200,11 +180,7 @@ const ReportsPage = () => {
       // Sort all operations by date (newest first)
       operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      // NOW we can display the counts
-      doc.text(periodText, 14, 56);
-      doc.text(`Total Assignments: ${assignments.length}`, 14, 62);
-      doc.text(`Total Operations (including returns): ${operations.length}`, 14, 68);
-      
+      // Prepare PDF data
       const tableData = operations.map((op: any) => [
         new Date(op.date).toLocaleDateString(),
         op.device,
@@ -217,6 +193,36 @@ const ReportsPage = () => {
         op.status,
         op.notes,
       ]);
+      
+      // Build report title
+      let reportTitle = 'Operations Report';
+      if (selectedUserId !== 'all') {
+        const selectedUser = users.find(u => u.id === selectedUserId);
+        if (selectedUser) {
+          reportTitle = 'Operations Report - ' + selectedUser.full_name;
+        }
+      }
+      
+      // Build period text
+      let periodText = 'Period: All Time';
+      if (startDate && endDate) {
+        periodText = `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+      } else if (startDate) {
+        periodText = `Period: From ${new Date(startDate).toLocaleDateString()}`;
+      } else if (endDate) {
+        periodText = `Period: Until ${new Date(endDate).toLocaleDateString()}`;
+      }
+      
+      // Create PDF
+      const doc = new jsPDF();
+      addLogoToPDF(doc, reportTitle);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      doc.text('Generated: ' + new Date().toLocaleDateString(), 14, 50);
+      doc.text(periodText, 14, 56);
+      doc.text('Total Assignments: ' + assignments.length, 14, 62);
+      doc.text('Total Operations (including returns): ' + operations.length, 14, 68);
 
       autoTable(doc, {
         startY: 74,
@@ -226,22 +232,29 @@ const ReportsPage = () => {
         headStyles: { fillColor: [16, 185, 129], fontSize: 8, fontStyle: 'bold' },
         styles: { fontSize: 6, cellPadding: 2 },
         columnStyles: {
-          0: { cellWidth: 18 }, // Date
-          1: { cellWidth: 25 }, // Device
-          2: { cellWidth: 18 }, // Asset
-          3: { cellWidth: 15 }, // Type
-          4: { cellWidth: 22 }, // Serial
-          5: { cellWidth: 22 }, // User
-          6: { cellWidth: 20 }, // Dept
-          7: { cellWidth: 25, fontStyle: 'bold', halign: 'center' }, // Action - BOLD
-          8: { cellWidth: 15, halign: 'center' }, // Status
-          9: { cellWidth: 20 }, // Notes
+          0: { cellWidth: 18 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 18 },
+          3: { cellWidth: 15 },
+          4: { cellWidth: 22 },
+          5: { cellWidth: 22 },
+          6: { cellWidth: 20 },
+          7: { cellWidth: 25, fontStyle: 'bold', halign: 'center' },
+          8: { cellWidth: 15, halign: 'center' },
+          9: { cellWidth: 20 },
         },
       });
 
-      const fileName = selectedUserId === 'all'
-        ? `operations_report_${new Date().toISOString().split('T')[0]}.pdf`
-        : `operations_report_${users.find(u => u.id === selectedUserId)?.full_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Build filename
+      const today = new Date().toISOString().split('T')[0];
+      let fileName = 'operations_report_' + today + '.pdf';
+      if (selectedUserId !== 'all') {
+        const selectedUser = users.find(u => u.id === selectedUserId);
+        if (selectedUser) {
+          const userName = selectedUser.full_name.replace(/\s+/g, '_');
+          fileName = 'operations_report_' + userName + '_' + today + '.pdf';
+        }
+      }
       
       doc.save(fileName);
     } catch (error) {
