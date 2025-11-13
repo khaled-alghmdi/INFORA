@@ -81,28 +81,38 @@ const ReportsPage = () => {
     }
   };
 
-  // Add header to PDF (logo temporarily disabled to fix error)
+  // Add header to PDF with logo
   const addLogoToPDF = (doc: jsPDF, title: string) => {
-    // Add company name
+    // Add green box with company name (as logo replacement)
+    doc.setFillColor(16, 185, 129); // Green
+    doc.rect(14, 10, 30, 20, 'F');
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255); // White text
+    doc.text('TAMER', 18, 18);
+    doc.text('GROUP', 18, 25);
+    
+    // Add company name next to logo
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(16, 185, 129); // Green color
-    doc.text('TAMER CONSUMER COMPANY', 14, 18);
+    doc.text('TAMER CONSUMER COMPANY', 48, 18);
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text('IT Device Inventory Management System', 14, 24);
+    doc.text('IT Device Inventory Management System', 48, 26);
     
     // Add line separator
     doc.setDrawColor(200, 200, 200);
-    doc.line(14, 32, 196, 32);
+    doc.line(14, 35, 196, 35);
     
     // Add report title
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text(title, 14, 42);
+    doc.text(title, 14, 45);
   };
 
   // 1. Operations Report - All operations filtered by date range
@@ -214,35 +224,46 @@ const ReportsPage = () => {
       }
       
       // Create PDF
-      const doc = new jsPDF();
+      const doc = new jsPDF('landscape'); // Use landscape for better table fit
       addLogoToPDF(doc, reportTitle);
       
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
-      doc.text('Generated: ' + new Date().toLocaleDateString(), 14, 50);
-      doc.text(periodText, 14, 56);
-      doc.text('Total Assignments: ' + assignments.length, 14, 62);
-      doc.text('Total Operations (including returns): ' + operations.length, 14, 68);
+      doc.text('Generated: ' + new Date().toLocaleDateString(), 14, 53);
+      doc.text(periodText, 14, 59);
+      doc.text('Total Assignments: ' + assignments.length, 14, 65);
+      doc.text('Total Operations (including returns): ' + operations.length, 14, 71);
 
       autoTable(doc, {
-        startY: 74,
+        startY: 78,
         head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial', 'User', 'Dept', 'Action', 'Status', 'Notes']],
         body: tableData,
         theme: 'striped',
-        headStyles: { fillColor: [16, 185, 129], fontSize: 8, fontStyle: 'bold' },
-        styles: { fontSize: 6, cellPadding: 2 },
-        columnStyles: {
-          0: { cellWidth: 18 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 18 },
-          3: { cellWidth: 15 },
-          4: { cellWidth: 22 },
-          5: { cellWidth: 22 },
-          6: { cellWidth: 20 },
-          7: { cellWidth: 25, fontStyle: 'bold', halign: 'center' },
-          8: { cellWidth: 15, halign: 'center' },
-          9: { cellWidth: 20 },
+        headStyles: { 
+          fillColor: [16, 185, 129], 
+          fontSize: 10, 
+          fontStyle: 'bold',
+          textColor: [255, 255, 255],
+          halign: 'center'
         },
+        styles: { 
+          fontSize: 9, 
+          cellPadding: 3,
+          overflow: 'linebreak'
+        },
+        columnStyles: {
+          0: { cellWidth: 25, halign: 'center' },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 25, halign: 'center' },
+          3: { cellWidth: 20, halign: 'center' },
+          4: { cellWidth: 28, halign: 'center' },
+          5: { cellWidth: 35 },
+          6: { cellWidth: 30 },
+          7: { cellWidth: 30, fontStyle: 'bold', halign: 'center', fillColor: [240, 253, 244] },
+          8: { cellWidth: 25, halign: 'center' },
+          9: { cellWidth: 35 },
+        },
+        margin: { left: 14, right: 14 },
       });
 
       // Build filename
