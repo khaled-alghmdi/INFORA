@@ -368,28 +368,29 @@ const UsersPage = () => {
 
         {/* Users Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-max">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[200px]">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Employee ID
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Department
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Devices
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -397,20 +398,20 @@ const UsersPage = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full flex items-center justify-center shadow-md">
-                        <span className="text-white font-semibold">
+                      <div className="flex-shrink-0 h-9 w-9 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full flex items-center justify-center shadow-md">
+                        <span className="text-white font-semibold text-sm">
                           {user.full_name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <div className="ml-4">
+                      <div className="ml-3">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">{user.full_name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{user.email}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     {user.employee_id ? (
                       <div className="flex items-center space-x-2">
                         <span className="text-sm font-mono font-semibold text-gray-900 dark:text-white bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1 rounded">
@@ -428,12 +429,12 @@ const UsersPage = () => {
                       <span className="text-xs text-gray-400 dark:text-gray-500 italic">Not set</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <span className="text-sm text-gray-900 dark:text-white">{user.department}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
                         user.role === 'admin'
                           ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
@@ -442,10 +443,10 @@ const UsersPage = () => {
                       {user.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900 dark:text-white">{user.device_count || 0}</span>
+                  <td className="px-3 py-3 whitespace-nowrap text-center">
+                    <span className="text-sm text-gray-900 dark:text-white font-medium">{user.device_count || 0}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 py-3 whitespace-nowrap">
                     <button
                       onClick={() => handleToggleStatus(user)}
                       className={`flex items-center space-x-1 px-3 py-1 text-xs font-semibold rounded-full ${
@@ -467,8 +468,8 @@ const UsersPage = () => {
                       )}
                     </button>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex space-x-2">
+                  <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex space-x-2 justify-center">
                       <button
                         onClick={() => openEditModal(user)}
                         className="text-green-600 dark:text-green-400 hover:text-green-800"
@@ -487,6 +488,7 @@ const UsersPage = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Add User Modal */}
