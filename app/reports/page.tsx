@@ -21,7 +21,6 @@ const ReportsPage = () => {
   const [selectedReport, setSelectedReport] = useState<ReportType>('operations');
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
-  const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
   
   // Date filters for operations report
   const [startDate, setStartDate] = useState<string>('');
@@ -68,15 +67,7 @@ const ReportsPage = () => {
 
   useEffect(() => {
     fetchUsers();
-    preloadLogo();
   }, []);
-
-  const preloadLogo = () => {
-    const img = new Image();
-    img.onload = () => setLogoImage(img);
-    img.onerror = () => console.warn('Logo failed to load');
-    img.src = '/Tamer_logo.png';
-  };
 
   const fetchUsers = async () => {
     const { data } = await supabase
@@ -90,27 +81,18 @@ const ReportsPage = () => {
     }
   };
 
-  // Add logo to PDF header (using preloaded image)
+  // Add header to PDF (logo temporarily disabled to fix error)
   const addLogoToPDF = (doc: jsPDF, title: string) => {
-    // Add logo if available
-    if (logoImage) {
-      try {
-        doc.addImage(logoImage, 'PNG', 14, 10, 20, 20);
-      } catch (error) {
-        console.warn('Error adding logo to PDF:', error);
-      }
-    }
-    
-    // Add company name next to logo
+    // Add company name
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(16, 185, 129); // Green color
-    doc.text('TAMER CONSUMER COMPANY', 38, 18);
+    doc.text('TAMER CONSUMER COMPANY', 14, 18);
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text('IT Device Inventory Management System', 38, 24);
+    doc.text('IT Device Inventory Management System', 14, 24);
     
     // Add line separator
     doc.setDrawColor(200, 200, 200);
@@ -825,10 +807,12 @@ const ReportsPage = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="report-start-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Start Date
                     </label>
                     <input
+                      id="report-start-date"
+                      name="startDate"
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -837,10 +821,12 @@ const ReportsPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label htmlFor="report-end-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       End Date
                     </label>
                     <input
+                      id="report-end-date"
+                      name="endDate"
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
@@ -878,12 +864,14 @@ const ReportsPage = () => {
               <div className="mb-6 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <label htmlFor="report-user-filter" className="text-sm font-semibold text-gray-900 dark:text-white">
                     Filter by User
-                  </h3>
+                  </label>
                 </div>
                 <div className="relative">
                   <select
+                    id="report-user-filter"
+                    name="userFilter"
                     value={selectedUserId}
                     onChange={(e) => setSelectedUserId(e.target.value)}
                     className="w-full px-4 py-3 pl-20 pr-10 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white appearance-none cursor-pointer font-medium"
