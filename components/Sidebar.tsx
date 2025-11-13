@@ -44,8 +44,8 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-white min-h-screen fixed left-0 top-0 shadow-2xl border-r border-gray-700 dark:border-gray-800">
-      <div className="p-6">
+    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-white min-h-screen fixed left-0 top-0 shadow-2xl border-r border-gray-700 dark:border-gray-800 z-40 overflow-y-auto">
+      <div className="p-6 pb-32">
         <div className="flex items-center space-x-3 mb-8 group">
           <div className="relative">
             <div className="absolute inset-0 bg-green-500 rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>

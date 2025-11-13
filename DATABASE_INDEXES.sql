@@ -5,6 +5,12 @@
 -- ============================================
 
 -- ============================================
+-- ENABLE REQUIRED EXTENSIONS
+-- ============================================
+-- Enable pg_trgm extension for full-text search (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- ============================================
 -- USERS TABLE INDEXES
 -- ============================================
 -- Search optimization (Quick Search, User Management)
@@ -81,12 +87,13 @@ CREATE INDEX IF NOT EXISTS idx_assignments_created_at ON assignments USING btree
 CREATE INDEX IF NOT EXISTS idx_assignments_active ON assignments USING btree(device_id, user_id) WHERE return_date IS NULL;
 
 -- ============================================
--- NOTIFICATIONS TABLE INDEXES (if exists)
+-- NOTIFICATIONS TABLE INDEXES (COMMENTED OUT - table doesn't exist yet)
 -- ============================================
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications USING btree(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications USING btree(is_read);
-CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications USING btree(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications USING btree(user_id, is_read) WHERE is_read = false;
+-- Uncomment these when you create the notifications table:
+-- CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications USING btree(user_id);
+-- CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications USING btree(is_read);
+-- CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications USING btree(created_at DESC);
+-- CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications USING btree(user_id, is_read) WHERE is_read = false;
 
 -- ============================================
 -- VERIFY INDEXES
