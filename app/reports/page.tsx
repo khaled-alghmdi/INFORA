@@ -112,29 +112,33 @@ const ReportsPage = () => {
 
   // 1. Operations Report - All operations filtered by date range
   const generateOperationsReport = async () => {
-    let query = supabase
+    // ENHANCED: Fetch multiple sources of operations
+    let assignmentsQuery = supabase
       .from('assignments')
-      .select('*, devices(name, type, serial_number), users(full_name, department)')
+      .select('*, devices(name, type, serial_number, asset_number), users(full_name, department)')
       .order('assigned_date', { ascending: false });
 
     // Apply date filters if provided
     if (startDate) {
-      query = query.gte('assigned_date', new Date(startDate).toISOString());
+      assignmentsQuery = assignmentsQuery.gte('assigned_date', new Date(startDate).toISOString());
     }
     if (endDate) {
       const endDateTime = new Date(endDate);
       endDateTime.setHours(23, 59, 59, 999);
-      query = query.lte('assigned_date', endDateTime.toISOString());
+      assignmentsQuery = assignmentsQuery.lte('assigned_date', endDateTime.toISOString());
     }
 
     // Filter by specific user if selected
     if (selectedUserId !== 'all') {
-      query = query.eq('user_id', selectedUserId);
+      assignmentsQuery = assignmentsQuery.eq('user_id', selectedUserId);
     }
 
-    const { data: assignments } = await query;
+    const { data: assignments } = await assignmentsQuery;
 
-    if (!assignments) return;
+    if (!assignments || assignments.length === 0) {
+      alert('No operations found for the selected criteria.');
+      return;
+    }
 
     const doc = new jsPDF();
     
@@ -157,37 +161,78 @@ const ReportsPage = () => {
       : 'Period: All Time';
     
     doc.text(periodText, 14, 56);
-    doc.text(`Total Operations: ${assignments.length}`, 14, 62);
+    doc.text(`Total Assignments: ${assignments.length}`, 14, 62);
+    doc.text(`Total Operations (including returns): ${operations.length}`, 14, 68);
     
-    const tableData = assignments.map((assignment: any) => {
-      // Determine action type
-      let action = 'Assigned';
-      if (assignment.return_date) {
-        action = `Returned (${new Date(assignment.return_date).toLocaleDateString()})`;
-      }
+    // Create comprehensive operations list with all actions
+    const operations: any[] = [];
+    
+    assignments.forEach((assignment: any) => {
+      // Assignment action
+      operations.push({
+        date: assignment.assigned_date,
+        device: assignment.devices?.name || 'N/A',
+        asset: assignment.devices?.asset_number || 'N/A',
+        type: assignment.devices?.type || 'N/A',
+        serial: assignment.devices?.serial_number || 'N/A',
+        user: assignment.users?.full_name || 'N/A',
+        department: assignment.users?.department || 'N/A',
+        action: '✓ Device Assigned',
+        status: 'Completed',
+        notes: assignment.notes || '-',
+      });
       
-      return [
-        new Date(assignment.assigned_date).toLocaleDateString(),
-        assignment.devices?.name || 'N/A',
-        assignment.devices?.asset_number || 'N/A',
-        assignment.devices?.type || 'N/A',
-        assignment.devices?.serial_number || 'N/A',
-        assignment.users?.full_name || 'N/A',
-        assignment.users?.department || 'N/A',
-        action,
-        assignment.return_date ? 'Closed' : 'Active',
-      ];
+      // Return action (if exists)
+      if (assignment.return_date) {
+        operations.push({
+          date: assignment.return_date,
+          device: assignment.devices?.name || 'N/A',
+          asset: assignment.devices?.asset_number || 'N/A',
+          type: assignment.devices?.type || 'N/A',
+          serial: assignment.devices?.serial_number || 'N/A',
+          user: assignment.users?.full_name || 'N/A',
+          department: assignment.users?.department || 'N/A',
+          action: '↩ Device Returned',
+          status: 'Completed',
+          notes: 'Device returned to inventory',
+        });
+      }
     });
+    
+    // Sort all operations by date (newest first)
+    operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    const tableData = operations.map((op: any) => [
+      new Date(op.date).toLocaleDateString(),
+      op.device,
+      op.asset,
+      op.type,
+      op.serial,
+      op.user,
+      op.department,
+      op.action,
+      op.status,
+      op.notes,
+    ]);
 
     autoTable(doc, {
-      startY: 68,
-      head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial No.', 'User', 'Department', 'Action', 'Status']],
+      startY: 74,
+      head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial', 'User', 'Dept', 'Action', 'Status', 'Notes']],
       body: tableData,
       theme: 'striped',
-      headStyles: { fillColor: [16, 185, 129] },
-      styles: { fontSize: 7 },
+      headStyles: { fillColor: [16, 185, 129], fontSize: 8, fontStyle: 'bold' },
+      styles: { fontSize: 6, cellPadding: 2 },
       columnStyles: {
-        7: { fontStyle: 'bold' }, // Action column bold
+        0: { cellWidth: 18 }, // Date
+        1: { cellWidth: 25 }, // Device
+        2: { cellWidth: 18 }, // Asset
+        3: { cellWidth: 15 }, // Type
+        4: { cellWidth: 22 }, // Serial
+        5: { cellWidth: 22 }, // User
+        6: { cellWidth: 20 }, // Dept
+        7: { cellWidth: 25, fontStyle: 'bold', halign: 'center' }, // Action - BOLD
+        8: { cellWidth: 15, halign: 'center' }, // Status
+        9: { cellWidth: 20 }, // Notes
       },
     });
 
