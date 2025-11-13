@@ -43,7 +43,11 @@ const MyDevicesPage = () => {
       .order('assigned_date', { ascending: false });
 
     if (data) {
-      setMyDevices(data);
+      // FILTER: Only show Laptop and Monitor devices
+      const filteredDevices = data.filter(
+        (device) => device.type === 'Laptop' || device.type === 'Monitor'
+      );
+      setMyDevices(filteredDevices);
     }
     setLoading(false);
   };

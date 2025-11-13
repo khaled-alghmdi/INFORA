@@ -115,7 +115,13 @@ const DevicesPage = () => {
         ...device,
         assignee_name: device.users?.full_name || null,
       }));
-      setDevices(devicesWithAssignee);
+      
+      // FILTER: Only show Laptop and Monitor devices in UI
+      const filteredByAllowedTypes = devicesWithAssignee.filter(
+        (device: any) => device.type === 'Laptop' || device.type === 'Monitor'
+      );
+      
+      setDevices(filteredByAllowedTypes);
     }
   };
 
@@ -339,7 +345,8 @@ const DevicesPage = () => {
     setShowAssignModal(true);
   };
 
-  const deviceTypes = Array.from(new Set(devices.map((d) => d.type)));
+  // Fixed device types - only Laptop and Monitor
+  const deviceTypes = ['Laptop', 'Monitor'];
 
   return (
     <div className="flex">
@@ -390,11 +397,8 @@ const DevicesPage = () => {
               className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All Types</option>
-              {deviceTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <option value="Laptop">Laptop</option>
+              <option value="Monitor">Monitor</option>
             </select>
           </div>
         </div>

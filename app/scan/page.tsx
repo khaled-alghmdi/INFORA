@@ -208,6 +208,11 @@ const ScanPage = () => {
       .select('*')
       .eq('assigned_to', foundUser.id);
 
+    // FILTER: Only show Laptop and Monitor devices
+    const filteredDevices = (userDevices || []).filter(
+      (device: any) => device.type === 'Laptop' || device.type === 'Monitor'
+    );
+
     // Fetch user's requests
     const { data: userRequests } = await supabase
       .from('requests')
@@ -217,9 +222,9 @@ const ScanPage = () => {
 
     const completeUserData: UserData = {
       ...foundUser,
-      devices: userDevices || [],
+      devices: filteredDevices,
       requests: userRequests || [],
-      totalDevices: userDevices?.length || 0,
+      totalDevices: filteredDevices.length,
       totalRequests: userRequests?.length || 0,
     };
 
