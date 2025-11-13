@@ -139,173 +139,168 @@ const ReportsPage = () => {
     doc.text(title, 14, 48);
   };
 
-  // 1. Operations Report - All operations filtered by date range
+  // 1. OPERATIONS REPORT - REWRITTEN FROM SCRATCH
   const generateOperationsReport = async () => {
+    console.log('=== GENERATING NEW OPERATIONS REPORT ===');
+    
     try {
-      // ENHANCED: Fetch multiple sources of operations
-      let assignmentsQuery = supabase
+      // STEP 1: Fetch assignments from database
+      let query = supabase
         .from('assignments')
-        .select('*, devices(name, type, serial_number, asset_number), users(full_name, department)')
+        .select('assigned_date, return_date, notes, devices(name, type, serial_number, asset_number), users(full_name, department)')
         .order('assigned_date', { ascending: false });
 
-      // Apply date filters if provided
-      if (startDate) {
-        assignmentsQuery = assignmentsQuery.gte('assigned_date', new Date(startDate).toISOString());
-      }
+      if (startDate) query = query.gte('assigned_date', new Date(startDate).toISOString());
       if (endDate) {
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        assignmentsQuery = assignmentsQuery.lte('assigned_date', endDateTime.toISOString());
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59);
+        query = query.lte('assigned_date', end.toISOString());
       }
+      if (selectedUserId !== 'all') query = query.eq('user_id', selectedUserId);
 
-      // Filter by specific user if selected
-      if (selectedUserId !== 'all') {
-        assignmentsQuery = assignmentsQuery.eq('user_id', selectedUserId);
-      }
-
-      const { data: assignments, error: fetchError } = await assignmentsQuery;
+      const { data, error } = await query;
       
-      if (fetchError) {
-        console.error('Database fetch error:', fetchError);
-        alert(`Database error: ${fetchError.message}`);
+      if (error) {
+        alert('Database error: ' + error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        alert('No operations found.');
         return;
       }
 
-      if (!assignments || assignments.length === 0) {
-        alert('No operations found for the selected criteria.');
-        return;
-      }
-
-      // Create comprehensive operations list with all actions
-      const operations: any[] = [];
+      // STEP 2: Build operations array
+      const allOps = [];
       
-      assignments.forEach((assignment: any) => {
-        // Assignment action
-        operations.push({
-          date: assignment.assigned_date,
-          device: assignment.devices?.name || 'N/A',
-          asset: assignment.devices?.asset_number || 'N/A',
-          type: assignment.devices?.type || 'N/A',
-          serial: assignment.devices?.serial_number || 'N/A',
-          user: assignment.users?.full_name || 'N/A',
-          department: assignment.users?.department || 'N/A',
+      for (const row of data) {
+        // Add ASSIGNED operation
+        allOps.push({
+          date: row.assigned_date,
+          deviceName: row.devices?.name || 'N/A',
+          assetNo: row.devices?.asset_number || 'N/A',
+          deviceType: row.devices?.type || 'N/A',
+          serial: row.devices?.serial_number || 'N/A',
+          userName: row.users?.full_name || 'N/A',
+          dept: row.users?.department || 'N/A',
           action: 'ASSIGNED',
-          status: 'Completed',
-          notes: assignment.notes || '-',
+          notes: row.notes || '-'
         });
         
-        // Return action (if exists)
-        if (assignment.return_date) {
-          operations.push({
-            date: assignment.return_date,
-            device: assignment.devices?.name || 'N/A',
-            asset: assignment.devices?.asset_number || 'N/A',
-            type: assignment.devices?.type || 'N/A',
-            serial: assignment.devices?.serial_number || 'N/A',
-            user: assignment.users?.full_name || 'N/A',
-            department: assignment.users?.department || 'N/A',
+        // Add RETURNED operation if exists
+        if (row.return_date) {
+          allOps.push({
+            date: row.return_date,
+            deviceName: row.devices?.name || 'N/A',
+            assetNo: row.devices?.asset_number || 'N/A',
+            deviceType: row.devices?.type || 'N/A',
+            serial: row.devices?.serial_number || 'N/A',
+            userName: row.users?.full_name || 'N/A',
+            dept: row.users?.department || 'N/A',
             action: 'RETURNED',
-            status: 'Completed',
-            notes: 'Device returned to inventory',
+            notes: 'Returned to inventory'
           });
         }
-      });
+      }
       
-      // Sort all operations by date (newest first)
-      operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // Sort by date newest first
+      allOps.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      // Prepare PDF data
-      const tableData = operations.map((op: any) => [
+      console.log('Total operations:', allOps.length);
+
+      // STEP 3: Create PDF (LANDSCAPE)
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      
+      // Add header with logo
+      if (logoLoaded && logoDataUrl) {
+        pdf.addImage(logoDataUrl, 'PNG', 14, 10, 25, 25);
+      }
+      
+      pdf.setFontSize(16);
+      pdf.setTextColor(16, 185, 129);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('TAMER CONSUMER COMPANY', 44, 18);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('IT Device Inventory Management System', 44, 26);
+      
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(14, 38, 283, 38);
+      
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'bold');
+      const title = selectedUserId === 'all' ? 'Operations Report' : 'Operations Report - ' + (users.find(u => u.id === selectedUserId)?.full_name || 'User');
+      pdf.text(title, 14, 48);
+      
+      pdf.setFontSize(10);
+      pdf.setTextColor(80, 80, 80);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Generated: ' + new Date().toLocaleDateString(), 14, 56);
+      
+      let period = 'Period: All Time';
+      if (startDate && endDate) period = 'Period: ' + new Date(startDate).toLocaleDateString() + ' - ' + new Date(endDate).toLocaleDateString();
+      else if (startDate) period = 'Period: From ' + new Date(startDate).toLocaleDateString();
+      else if (endDate) period = 'Period: Until ' + new Date(endDate).toLocaleDateString();
+      pdf.text(period, 14, 62);
+      
+      pdf.text('Total Assignments: ' + data.length, 14, 68);
+      pdf.text('Total Operations: ' + allOps.length, 14, 74);
+
+      // STEP 4: Create table
+      const tableRows = allOps.map(op => [
         new Date(op.date).toLocaleDateString(),
-        op.device,
-        op.asset,
-        op.type,
+        op.deviceName,
+        op.assetNo,
+        op.deviceType,
         op.serial,
-        op.user,
-        op.department,
+        op.userName,
+        op.dept,
         op.action,
-        op.status,
-        op.notes,
+        'Completed',
+        op.notes
       ]);
       
-      // Build report title
-      let reportTitle = 'Operations Report';
-      if (selectedUserId !== 'all') {
-        const selectedUser = users.find(u => u.id === selectedUserId);
-        if (selectedUser) {
-          reportTitle = 'Operations Report - ' + selectedUser.full_name;
-        }
-      }
-      
-      // Build period text
-      let periodText = 'Period: All Time';
-      if (startDate && endDate) {
-        periodText = `Period: ${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-      } else if (startDate) {
-        periodText = `Period: From ${new Date(startDate).toLocaleDateString()}`;
-      } else if (endDate) {
-        periodText = `Period: Until ${new Date(endDate).toLocaleDateString()}`;
-      }
-      
-      // Create PDF
-      const doc = new jsPDF('landscape'); // Use landscape for better table fit
-      addLogoToPDF(doc, reportTitle);
-      
-      doc.setFontSize(10);
-      doc.setTextColor(80, 80, 80);
-      doc.text('Generated: ' + new Date().toLocaleDateString(), 14, 56);
-      doc.text(periodText, 14, 62);
-      doc.text('Total Assignments: ' + assignments.length, 14, 68);
-      doc.text('Total Operations (including returns): ' + operations.length, 14, 74);
-
-      autoTable(doc, {
+      autoTable(pdf, {
         startY: 82,
-        head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial', 'User', 'Dept', 'Action', 'Status', 'Notes']],
-        body: tableData,
+        head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial', 'User', 'Department', 'Action', 'Status', 'Notes']],
+        body: tableRows,
         theme: 'striped',
-        headStyles: { 
-          fillColor: [16, 185, 129], 
-          fontSize: 10, 
-          fontStyle: 'bold',
+        headStyles: {
+          fillColor: [16, 185, 129],
           textColor: [255, 255, 255],
+          fontSize: 10,
+          fontStyle: 'bold',
           halign: 'center'
         },
-        styles: { 
-          fontSize: 9, 
-          cellPadding: 3,
-          overflow: 'linebreak'
+        styles: {
+          fontSize: 9,
+          cellPadding: 3
         },
         columnStyles: {
-          0: { cellWidth: 25, halign: 'center' },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 25, halign: 'center' },
+          0: { cellWidth: 24, halign: 'center' },
+          1: { cellWidth: 34 },
+          2: { cellWidth: 24, halign: 'center' },
           3: { cellWidth: 20, halign: 'center' },
-          4: { cellWidth: 28, halign: 'center' },
-          5: { cellWidth: 35 },
-          6: { cellWidth: 30 },
-          7: { cellWidth: 30, fontStyle: 'bold', halign: 'center', fillColor: [240, 253, 244] },
-          8: { cellWidth: 25, halign: 'center' },
-          9: { cellWidth: 35 },
-        },
-        margin: { left: 14, right: 14 },
+          4: { cellWidth: 26, halign: 'center' },
+          5: { cellWidth: 34 },
+          6: { cellWidth: 28 },
+          7: { cellWidth: 28, fontStyle: 'bold', halign: 'center', fillColor: [240, 253, 244] },
+          8: { cellWidth: 24, halign: 'center' },
+          9: { cellWidth: 32 }
+        }
       });
 
-      // Build filename
-      const today = new Date().toISOString().split('T')[0];
-      let fileName = 'operations_report_' + today + '.pdf';
-      if (selectedUserId !== 'all') {
-        const selectedUser = users.find(u => u.id === selectedUserId);
-        if (selectedUser) {
-          const userName = selectedUser.full_name.replace(/\s+/g, '_');
-          fileName = 'operations_report_' + userName + '_' + today + '.pdf';
-        }
-      }
+      // STEP 5: Save PDF
+      const filename = 'Operations_Report_' + new Date().toISOString().split('T')[0] + '.pdf';
+      pdf.save(filename);
       
-      doc.save(fileName);
-    } catch (error) {
-      console.error('Error in generateOperationsReport:', error);
-      alert(`Error generating report: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
+      console.log('=== REPORT GENERATED SUCCESSFULLY ===');
+      
+    } catch (err) {
+      console.error('ERROR:', err);
+      alert('Error: ' + (err instanceof Error ? err.message : 'Unknown'));
     }
   };
 
