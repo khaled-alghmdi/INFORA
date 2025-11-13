@@ -21,6 +21,8 @@ const ReportsPage = () => {
   const [selectedReport, setSelectedReport] = useState<ReportType>('operations');
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  const [logoLoaded, setLogoLoaded] = useState(false);
+  const [logoDataUrl, setLogoDataUrl] = useState<string>('');
   
   // Date filters for operations report
   const [startDate, setStartDate] = useState<string>('');
@@ -67,7 +69,30 @@ const ReportsPage = () => {
 
   useEffect(() => {
     fetchUsers();
+    loadLogo();
   }, []);
+
+  const loadLogo = () => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL('image/png');
+        setLogoDataUrl(dataUrl);
+        setLogoLoaded(true);
+      }
+    };
+    img.onerror = () => {
+      console.warn('Logo failed to load');
+      setLogoLoaded(false);
+    };
+    img.src = '/Tamer_logo.png';
+  };
 
   const fetchUsers = async () => {
     const { data } = await supabase
@@ -83,36 +108,35 @@ const ReportsPage = () => {
 
   // Add header to PDF with logo
   const addLogoToPDF = (doc: jsPDF, title: string) => {
-    // Add green box with company name (as logo replacement)
-    doc.setFillColor(16, 185, 129); // Green
-    doc.rect(14, 10, 30, 20, 'F');
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255); // White text
-    doc.text('TAMER', 18, 18);
-    doc.text('GROUP', 18, 25);
+    // Add Tamer logo if loaded
+    if (logoLoaded && logoDataUrl) {
+      try {
+        doc.addImage(logoDataUrl, 'PNG', 14, 10, 25, 25);
+      } catch (error) {
+        console.warn('Error adding logo:', error);
+      }
+    }
     
     // Add company name next to logo
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(16, 185, 129); // Green color
-    doc.text('TAMER CONSUMER COMPANY', 48, 18);
+    doc.text('TAMER CONSUMER COMPANY', 44, 18);
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text('IT Device Inventory Management System', 48, 26);
+    doc.text('IT Device Inventory Management System', 44, 26);
     
     // Add line separator
     doc.setDrawColor(200, 200, 200);
-    doc.line(14, 35, 196, 35);
+    doc.line(14, 38, 196, 38);
     
     // Add report title
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text(title, 14, 45);
+    doc.text(title, 14, 48);
   };
 
   // 1. Operations Report - All operations filtered by date range
@@ -229,13 +253,13 @@ const ReportsPage = () => {
       
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
-      doc.text('Generated: ' + new Date().toLocaleDateString(), 14, 53);
-      doc.text(periodText, 14, 59);
-      doc.text('Total Assignments: ' + assignments.length, 14, 65);
-      doc.text('Total Operations (including returns): ' + operations.length, 14, 71);
+      doc.text('Generated: ' + new Date().toLocaleDateString(), 14, 56);
+      doc.text(periodText, 14, 62);
+      doc.text('Total Assignments: ' + assignments.length, 14, 68);
+      doc.text('Total Operations (including returns): ' + operations.length, 14, 74);
 
       autoTable(doc, {
-        startY: 78,
+        startY: 82,
         head: [['Date', 'Device', 'Asset No.', 'Type', 'Serial', 'User', 'Dept', 'Action', 'Status', 'Notes']],
         body: tableData,
         theme: 'striped',
