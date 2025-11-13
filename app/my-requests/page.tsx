@@ -82,11 +82,13 @@ const MyRequestsPage = () => {
 
   const fetchMyRequests = async (userId: string) => {
     setLoading(true);
+    // OPTIMIZED: Select only needed fields + limit to recent 50 requests
     const { data } = await supabase
       .from('requests')
-      .select('*')
+      .select('id, request_type, title, description, priority, status, device_type, created_at, updated_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (data) {
       setMyRequests(data);
@@ -448,15 +450,8 @@ const MyRequestsPage = () => {
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900 dark:text-white dark:bg-gray-700"
                     >
                       <option value="" className="text-gray-500">Select Device Type</option>
-                      <option value="Laptop" className="text-gray-900">💻 Laptop</option>
-                      <option value="Monitor" className="text-gray-900">🖥️ Monitor</option>
-                      <option value="Desktop" className="text-gray-900">🖥️ Desktop Computer</option>
-                      <option value="Keyboard" className="text-gray-900">⌨️ Keyboard</option>
-                      <option value="Mouse" className="text-gray-900">🖱️ Mouse</option>
-                      <option value="Headset" className="text-gray-900">🎧 Headset</option>
-                      <option value="Phone" className="text-gray-900">📱 Mobile Phone</option>
-                      <option value="Tablet" className="text-gray-900">📱 Tablet</option>
-                      <option value="Other" className="text-gray-900">📦 Other</option>
+                      <option value="Laptop" className="text-gray-900 dark:text-white">💻 Laptop</option>
+                      <option value="Monitor" className="text-gray-900 dark:text-white">🖥️ Monitor</option>
                     </select>
                   </div>
                 )}

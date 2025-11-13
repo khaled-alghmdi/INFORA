@@ -125,5 +125,20 @@ CREATE INDEX IF NOT EXISTS idx_assignments_active ON assignments USING btree(dev
 -- Before: User search = 1-5 seconds
 -- After:  User search = 10-100ms (50x faster)
 
+-- ============================================
+-- ANALYZE TABLES (Updates statistics for query planner)
+-- ============================================
+ANALYZE users;
+ANALYZE devices;
+ANALYZE requests;
+ANALYZE assignments;
+
+-- NOTE: VACUUM commands must be run separately (not in transactions)
+-- Run these individually if you want to reclaim disk space:
+-- VACUUM ANALYZE users;
+-- VACUUM ANALYZE devices;
+-- VACUUM ANALYZE requests;
+-- VACUUM ANALYZE assignments;
+
 SELECT '✅ All indexes created successfully! Your database is now optimized.' AS status;
 
