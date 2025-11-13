@@ -58,9 +58,14 @@ const Dashboard = () => {
   }, [currentUserData]);
 
   const fetchDashboardData = async () => {
-      // Fetch devices data
-      const { data: devices } = await supabase.from('devices').select('*');
-      const { data: users } = await supabase.from('users').select('*');
+      // OPTIMIZED: Fetch devices and users in parallel
+      const [devicesResult, usersResult] = await Promise.all([
+        supabase.from('devices').select('type, status'),
+        supabase.from('users').select('is_active')
+      ]);
+
+      const { data: devices } = devicesResult;
+      const { data: users } = usersResult;
 
       if (devices) {
         const totalDevices = devices.length;

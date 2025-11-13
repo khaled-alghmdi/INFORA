@@ -81,22 +81,18 @@ const AnalyticsPage = () => {
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
 
-    // Fetch all devices
-    const { data: devices } = await supabase.from('devices').select('*');
-    
-    // Fetch all users
-    const { data: users } = await supabase.from('users').select('*');
-    
-    // Fetch all requests
-    const { data: requests } = await supabase
-      .from('requests')
-      .select('*, user:users!requests_user_id_fkey(full_name, department)');
+    // OPTIMIZED: Fetch all data in parallel with only needed fields
+    const [devicesResult, usersResult, requestsResult, assignmentsResult] = await Promise.all([
+      supabase.from('devices').select('id, name, type, status, assigned_to, purchase_date, warranty_expiry'),
+      supabase.from('users').select('id, full_name, department, is_active'),
+      supabase.from('requests').select('id, user_id, request_type, status, priority, created_at, resolved_at, user:users!requests_user_id_fkey(full_name, department)'),
+      supabase.from('assignments').select('id, device_id, user_id, assigned_date, return_date, created_at').order('created_at', { ascending: false })
+    ]);
 
-    // Fetch assignments
-    const { data: assignments } = await supabase
-      .from('assignments')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data: devices } = devicesResult;
+    const { data: users } = usersResult;
+    const { data: requests } = requestsResult;
+    const { data: assignments } = assignmentsResult;
 
     if (devices && users && requests) {
       // ===== CORE DEVICE METRICS =====

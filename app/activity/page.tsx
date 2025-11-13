@@ -55,12 +55,28 @@ const ActivityLogPage = () => {
     setLoading(true);
     const activityList: ActivityLog[] = [];
 
-    // Fetch device assignments from assignments table
-    const { data: assignments } = await supabase
-      .from('assignments')
-      .select('*, device:devices(name), user:users(full_name)')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    // OPTIMIZED: Fetch all data in parallel
+    const [assignmentsResult, devicesResult, requestsResult] = await Promise.all([
+      supabase
+        .from('assignments')
+        .select('id, created_at, return_date, device:devices(name), user:users(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('devices')
+        .select('id, name, status, created_at, updated_at, users!devices_assigned_to_fkey(full_name)')
+        .order('updated_at', { ascending: false })
+        .limit(30),
+      supabase
+        .from('requests')
+        .select('id, title, status, created_at, user:users!requests_user_id_fkey(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(30)
+    ]);
+
+    const { data: assignments } = assignmentsResult;
+    const { data: devices } = devicesResult;
+    const { data: requests } = requestsResult;
 
     if (assignments) {
       assignments.forEach((assignment: any) => {
@@ -78,13 +94,6 @@ const ActivityLogPage = () => {
       });
     }
 
-    // Fetch recent device changes
-    const { data: devices } = await supabase
-      .from('devices')
-      .select('*, users!devices_assigned_to_fkey(full_name)')
-      .order('updated_at', { ascending: false })
-      .limit(30);
-
     if (devices) {
       devices.forEach((device: any) => {
         if (device.updated_at !== device.created_at) {
@@ -100,13 +109,6 @@ const ActivityLogPage = () => {
         }
       });
     }
-
-    // Fetch recent requests
-    const { data: requests } = await supabase
-      .from('requests')
-      .select('*, user:users!requests_user_id_fkey(full_name)')
-      .order('created_at', { ascending: false })
-      .limit(30);
 
     if (requests) {
       requests.forEach((request: any) => {

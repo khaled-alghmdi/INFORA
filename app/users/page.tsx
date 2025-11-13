@@ -97,26 +97,33 @@ const UsersPage = () => {
   }, [filterUsers]);
 
   const fetchUsers = async () => {
-    const { data: usersData } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // OPTIMIZED: Fetch users and device counts in parallel (not N+1 queries)
+    const [usersResult, devicesResult] = await Promise.all([
+      supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('devices')
+        .select('assigned_to')
+        .not('assigned_to', 'is', null)
+    ]);
+
+    const { data: usersData } = usersResult;
+    const { data: devicesData } = devicesResult;
 
     if (usersData) {
-      // Get device counts for each user
-      const usersWithCounts = await Promise.all(
-        usersData.map(async (user) => {
-          const { count } = await supabase
-            .from('devices')
-            .select('*', { count: 'exact', head: true })
-            .eq('assigned_to', user.id);
+      // Count devices per user efficiently
+      const deviceCounts = (devicesData || []).reduce((acc: Record<string, number>, device) => {
+        acc[device.assigned_to] = (acc[device.assigned_to] || 0) + 1;
+        return acc;
+      }, {});
 
-          return {
-            ...user,
-            device_count: count || 0,
-          };
-        })
-      );
+      // Add device counts to users
+      const usersWithCounts = usersData.map(user => ({
+        ...user,
+        device_count: deviceCounts[user.id] || 0,
+      }));
 
       setUsers(usersWithCounts);
     }
