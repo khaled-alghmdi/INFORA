@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader';
 import { FileText, Download, Calendar, User, Info, CheckCircle, Flag } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import SearchableUserSelect from '@/components/SearchableUserSelect';
 
 type ReportType = 
   | 'operations'
@@ -14,15 +15,20 @@ type ReportType =
   | 'user_devices'
   | 'available_stock'
   | 'warranty'
-  | 'it_problems';
+  | 'it_problems'
+  | 'permanent_devices';
 
 const ReportsPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportType>('operations');
   const [users, setUsers] = useState<any[]>([]);
+  const [devices, setDevices] = useState<any[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('all');
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [logoDataUrl, setLogoDataUrl] = useState<string>('');
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   
   // Date filters for operations report
   const [startDate, setStartDate] = useState<string>('');
@@ -65,12 +71,143 @@ const ReportsPage = () => {
       description: 'All IT support problems reported by employees',
       icon: FileText,
     },
+    {
+      id: 'permanent_devices' as ReportType,
+      title: 'Delivery Note Required Report',
+      description: 'Users who MUST do delivery notes for specific devices',
+      icon: FileText,
+    },
   ];
 
   useEffect(() => {
     fetchUsers();
     loadLogo();
   }, []);
+
+  useEffect(() => {
+    // Load preview when report type changes
+    loadPreviewData();
+  }, [selectedReport, selectedUserId, startDate, endDate]);
+
+  const loadPreviewData = async () => {
+    setIsLoadingPreview(true);
+    
+    try {
+      let data: any = null;
+
+      switch (selectedReport) {
+        case 'operations':
+          let query = supabase
+            .from('assignments')
+            .select('assigned_date, return_date, notes, devices(name, type, serial_number, asset_number), users(full_name, department)')
+            .order('assigned_date', { ascending: false });
+
+          if (startDate) query = query.gte('assigned_date', new Date(startDate).toISOString());
+          if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59);
+            query = query.lte('assigned_date', end.toISOString());
+          }
+          if (selectedUserId !== 'all') query = query.eq('user_id', selectedUserId);
+
+          const { data: assignments } = await query;
+          data = { type: 'operations', data: assignments || [] };
+          break;
+
+        case 'assets':
+          let assetsQuery = supabase
+            .from('devices')
+            .select('*, users!devices_assigned_to_fkey(full_name, email, department)')
+            .order('status');
+
+          if (selectedUserId !== 'all') {
+            assetsQuery = assetsQuery.eq('assigned_to', selectedUserId);
+          }
+
+          const { data: assets } = await assetsQuery;
+          data = { type: 'assets', data: assets || [] };
+          break;
+
+        case 'user_devices':
+          let userDevQuery = supabase
+            .from('users')
+            .select('*, devices!devices_assigned_to_fkey(*)')
+            .order('full_name');
+
+          if (selectedUserId !== 'all') {
+            userDevQuery = userDevQuery.eq('id', selectedUserId);
+          }
+
+          const { data: usersData } = await userDevQuery;
+          const usersWithDevices = (usersData || []).filter((user: any) => {
+            const devices = user.devices || [];
+            return devices.length > 0;
+          });
+          data = { type: 'user_devices', data: usersWithDevices };
+          break;
+
+        case 'available_stock':
+          const { data: availDevices } = await supabase
+            .from('devices')
+            .select('*')
+            .eq('status', 'available')
+            .order('type');
+
+          data = { type: 'available_stock', data: availDevices || [] };
+          break;
+
+        case 'warranty':
+          const { data: allDevices } = await supabase
+            .from('devices')
+            .select('*')
+            .order('purchase_date', { ascending: false });
+
+          const fourYearsAgo = new Date();
+          fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+
+          const underWarranty = (allDevices || []).filter((device: any) => {
+            const purchaseDate = new Date(device.purchase_date);
+            return purchaseDate >= fourYearsAgo;
+          });
+
+          const outOfWarranty = (allDevices || []).filter((device: any) => {
+            const purchaseDate = new Date(device.purchase_date);
+            return purchaseDate < fourYearsAgo;
+          });
+
+          data = { type: 'warranty', underWarranty, outOfWarranty, total: allDevices?.length || 0 };
+          break;
+
+        case 'it_problems':
+          const { data: problems } = await supabase
+            .from('requests')
+            .select('*, user:users!requests_user_id_fkey(full_name, email, department)')
+            .eq('request_type', 'it_support')
+            .order('created_at', { ascending: false });
+
+          data = { type: 'it_problems', data: problems || [] };
+          break;
+
+        case 'permanent_devices':
+          const { data: usersWithReminders } = await supabase
+            .from('users')
+            .select('*, permanent_device:devices!users_permanent_device_id_fkey(name, type, asset_number, serial_number, status)')
+            .eq('has_permanent_device', true)
+            .not('permanent_device_id', 'is', null)
+            .order('full_name');
+
+          data = { type: 'permanent_devices', data: usersWithReminders || [] };
+          break;
+      }
+
+      setPreviewData(data);
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      setPreviewData(null);
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
 
   const loadLogo = () => {
     const img = new Image();
@@ -572,21 +709,22 @@ const ReportsPage = () => {
     addLogoToPDF(doc, 'Warranty Status Report');
     
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(80, 80, 80);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 50);
-    doc.text(`Total Devices: ${devices.length}`, 14, 56);
-    doc.text(`Under Warranty: ${underWarranty.length}`, 14, 62);
-    doc.text(`Out of Warranty: ${outOfWarranty.length}`, 14, 68);
-    doc.text(`Warranty Period: 4 years from purchase date`, 14, 74);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 56);
+    doc.text(`Total Devices: ${devices.length}`, 14, 62);
+    doc.text(`Under Warranty: ${underWarranty.length}`, 14, 68);
+    doc.text(`Out of Warranty: ${outOfWarranty.length}`, 14, 74);
+    doc.text(`Warranty Period: 4 years from purchase date`, 14, 80);
     
-    let startY = 82;
+    let startY = 88;
 
     // Section 1: Devices Under Warranty
     if (underWarranty.length > 0) {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(34, 197, 94); // Green color
-      doc.text('✓ DEVICES UNDER WARRANTY', 14, startY);
+      doc.text('[OK] DEVICES UNDER WARRANTY', 14, startY);
       doc.setTextColor(0, 0, 0);
       
       const underWarrantyData = underWarranty.map((device: any) => {
@@ -633,7 +771,7 @@ const ReportsPage = () => {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(239, 68, 68); // Red color
-      doc.text('✕ DEVICES OUT OF WARRANTY', 14, startY);
+      doc.text('[X] DEVICES OUT OF WARRANTY', 14, startY);
       doc.setTextColor(0, 0, 0);
       
       const outOfWarrantyData = outOfWarranty.map((device: any) => {
@@ -741,10 +879,399 @@ const ReportsPage = () => {
     const pendingCount = problems.filter((p: any) => p.status === 'pending').length;
     if (pendingCount > 0) {
       doc.setTextColor(220, 38, 38);
-      doc.text(`⚠ ${pendingCount} problems pending attention`, 14, finalY + 16);
+      doc.text(`[!] ${pendingCount} problems pending attention`, 14, finalY + 16);
     }
 
     doc.save(`it_problems_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  // 7. Delivery Note Required Report - Users who MUST do delivery notes for specific devices
+  const generatePermanentDevicesReport = async () => {
+    const { data: usersWithReminders } = await supabase
+      .from('users')
+      .select('*, permanent_device:devices!users_permanent_device_id_fkey(name, type, asset_number, serial_number, status)')
+      .eq('has_permanent_device', true)
+      .not('permanent_device_id', 'is', null)
+      .order('full_name');
+
+    if (!usersWithReminders || usersWithReminders.length === 0) {
+      alert('No users with delivery note requirements found.');
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Add logo and header
+    addLogoToPDF(doc, 'Delivery Note Required Report');
+    
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 56);
+    doc.text(`Total Users with Delivery Note Requirements: ${usersWithReminders.length}`, 14, 62);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(220, 38, 38); // Red color
+    doc.text('IMPORTANT: These users MUST do delivery notes for their assigned devices', 14, 70);
+    doc.setTextColor(0, 0, 0);
+
+    const tableData = usersWithReminders.map((user: any) => [
+      user.full_name,
+      user.email,
+      user.department,
+      user.employee_id || 'N/A',
+      user.permanent_device?.name || 'N/A',
+      user.permanent_device?.type || 'N/A',
+      user.permanent_device?.asset_number || 'N/A',
+      user.permanent_device?.serial_number || 'N/A',
+      user.permanent_device?.status || 'N/A',
+    ]);
+
+    autoTable(doc, {
+      startY: 78,
+      head: [['User Name', 'Email', 'Department', 'Employee ID', 'Device Name', 'Type', 'Asset No.', 'Serial Number', 'Status']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [220, 38, 38], // Red 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      styles: { fontSize: 7 },
+      columnStyles: {
+        0: { cellWidth: 30, fontStyle: 'bold' },
+        1: { cellWidth: 35 },
+        4: { cellWidth: 28, fillColor: [254, 226, 226] }, // Light red background for device
+      },
+    });
+
+    // Add footer note
+    const finalY = (doc as any).lastAutoTable.finalY || 80;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(220, 38, 38);
+    doc.text(`REMINDER: All ${usersWithReminders.length} users listed MUST do delivery notes!`, 14, finalY + 10);
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('This report shows users flagged to require delivery notes for their specific assigned devices.', 14, finalY + 16);
+
+    doc.save(`delivery_note_required_report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const renderPreviewTable = () => {
+    if (!previewData || !previewData.data) return null;
+
+    const data = previewData.data;
+
+    // Show message if no data
+    if (data.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-gray-600 dark:text-gray-400">No data found for this report.</p>
+        </div>
+      );
+    }
+
+    // Render based on report type
+    switch (previewData.type) {
+      case 'permanent_devices':
+        return (
+          <table className="w-full text-sm">
+            <thead className="bg-red-600 text-white sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">User Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Email</th>
+                <th className="px-4 py-3 text-left font-semibold">Department</th>
+                <th className="px-4 py-3 text-left font-semibold bg-red-700">Device Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Type</th>
+                <th className="px-4 py-3 text-left font-semibold">Asset No.</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {data.slice(0, 20).map((user: any, index: number) => (
+                <tr key={user.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                  <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{user.full_name}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{user.email}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{user.department}</td>
+                  <td className="px-4 py-3 font-semibold text-red-900 dark:text-red-300 bg-red-50 dark:bg-red-900/20">
+                    {user.permanent_device?.name || 'N/A'}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{user.permanent_device?.type || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono">{user.permanent_device?.asset_number || 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+
+      case 'available_stock':
+        return (
+          <table className="w-full text-sm">
+            <thead className="bg-green-600 text-white sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Type</th>
+                <th className="px-4 py-3 text-left font-semibold">Device Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Asset No.</th>
+                <th className="px-4 py-3 text-left font-semibold">Serial Number</th>
+                <th className="px-4 py-3 text-left font-semibold">Purchase Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {data.slice(0, 20).map((device: any, index: number) => (
+                <tr key={device.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                  <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{device.type}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.name}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono">{device.asset_number || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono text-xs">{device.serial_number}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{new Date(device.purchase_date).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+
+      case 'assets':
+        return (
+          <table className="w-full text-sm">
+            <thead className="bg-green-600 text-white sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Device Name</th>
+                <th className="px-4 py-3 text-left font-semibold">Type</th>
+                <th className="px-4 py-3 text-left font-semibold">Asset No.</th>
+                <th className="px-4 py-3 text-left font-semibold">Serial Number</th>
+                <th className="px-4 py-3 text-left font-semibold">Assigned To</th>
+                <th className="px-4 py-3 text-left font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {data.slice(0, 20).map((device: any, index: number) => (
+                <tr key={device.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                  <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{device.name}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.type}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono">{device.asset_number || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono text-xs">{device.serial_number}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.users?.full_name || 'N/A'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      device.status === 'assigned' ? 'bg-green-100 text-green-700' :
+                      device.status === 'available' ? 'bg-blue-100 text-blue-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {device.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+
+      case 'it_problems':
+        return (
+          <table className="w-full text-sm">
+            <thead className="bg-green-600 text-white sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Date</th>
+                <th className="px-4 py-3 text-left font-semibold">Employee</th>
+                <th className="px-4 py-3 text-left font-semibold">Department</th>
+                <th className="px-4 py-3 text-left font-semibold">Problem Title</th>
+                <th className="px-4 py-3 text-left font-semibold">Priority</th>
+                <th className="px-4 py-3 text-left font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {data.slice(0, 20).map((problem: any, index: number) => (
+                <tr key={problem.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{new Date(problem.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{problem.user?.full_name || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{problem.user?.department || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{problem.title}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      problem.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                      problem.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                      problem.priority === 'medium' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {problem.priority}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300 capitalize">{problem.status.replace('_', ' ')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+
+      case 'operations':
+        return (
+          <table className="w-full text-sm">
+            <thead className="bg-green-600 text-white sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">Date</th>
+                <th className="px-4 py-3 text-left font-semibold">Device</th>
+                <th className="px-4 py-3 text-left font-semibold">Type</th>
+                <th className="px-4 py-3 text-left font-semibold">User</th>
+                <th className="px-4 py-3 text-left font-semibold">Department</th>
+                <th className="px-4 py-3 text-left font-semibold">Notes</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {data.slice(0, 20).map((assignment: any, index: number) => (
+                <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{new Date(assignment.assigned_date).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{assignment.devices?.name || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{assignment.devices?.type || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{assignment.users?.full_name || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{assignment.users?.department || 'N/A'}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{assignment.notes || '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+
+      case 'user_devices':
+        return (
+          <div className="space-y-4">
+            {data.slice(0, 20).map((user: any) => (
+              <div key={user.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h4 className="font-bold text-gray-900 dark:text-white">{user.full_name}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{user.department} • {user.email}</p>
+                  </div>
+                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-semibold">
+                    {user.devices.length} device{user.devices.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-100 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">Device Name</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">Type</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">Asset No.</th>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">Assigned Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {user.devices.map((device: any) => (
+                        <tr key={device.id}>
+                          <td className="px-3 py-2 text-gray-900 dark:text-white">{device.name}</td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{device.type}</td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono">{device.asset_number || 'N/A'}</td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-300">
+                            {device.assigned_date ? new Date(device.assigned_date).toLocaleDateString() : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'warranty':
+        return (
+          <div className="space-y-6">
+            {previewData.underWarranty.length > 0 && (
+              <div>
+                <h4 className="text-lg font-bold text-green-700 dark:text-green-400 mb-3">
+                  ✓ DEVICES UNDER WARRANTY ({previewData.underWarranty.length})
+                </h4>
+                <table className="w-full text-sm">
+                  <thead className="bg-green-600 text-white">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold">Device Name</th>
+                      <th className="px-4 py-3 text-left font-semibold">Type</th>
+                      <th className="px-4 py-3 text-left font-semibold">Purchase Date</th>
+                      <th className="px-4 py-3 text-left font-semibold">Warranty Ends</th>
+                      <th className="px-4 py-3 text-left font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {previewData.underWarranty.slice(0, 10).map((device: any, index: number) => {
+                      const purchaseDate = new Date(device.purchase_date);
+                      const warrantyEndDate = new Date(purchaseDate);
+                      warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 4);
+                      
+                      return (
+                        <tr key={device.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                          <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{device.name}</td>
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.type}</td>
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.purchase_date}</td>
+                          <td className="px-4 py-3 text-green-700 dark:text-green-400 font-semibold">{warrantyEndDate.toLocaleDateString()}</td>
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.status}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {previewData.underWarranty.length > 10 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    ...and {previewData.underWarranty.length - 10} more (showing first 10)
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {previewData.outOfWarranty.length > 0 && (
+              <div>
+                <h4 className="text-lg font-bold text-red-700 dark:text-red-400 mb-3">
+                  ✗ DEVICES OUT OF WARRANTY ({previewData.outOfWarranty.length})
+                </h4>
+                <table className="w-full text-sm">
+                  <thead className="bg-red-600 text-white">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold">Device Name</th>
+                      <th className="px-4 py-3 text-left font-semibold">Type</th>
+                      <th className="px-4 py-3 text-left font-semibold">Purchase Date</th>
+                      <th className="px-4 py-3 text-left font-semibold">Warranty Ended</th>
+                      <th className="px-4 py-3 text-left font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {previewData.outOfWarranty.slice(0, 10).map((device: any, index: number) => {
+                      const purchaseDate = new Date(device.purchase_date);
+                      const warrantyEndDate = new Date(purchaseDate);
+                      warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 4);
+                      
+                      return (
+                        <tr key={device.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
+                          <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">{device.name}</td>
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.type}</td>
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.purchase_date}</td>
+                          <td className="px-4 py-3 text-red-700 dark:text-red-400 font-semibold">{warrantyEndDate.toLocaleDateString()}</td>
+                          <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{device.status}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {previewData.outOfWarranty.length > 10 && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    ...and {previewData.outOfWarranty.length - 10} more (showing first 10)
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+
+      default:
+        return (
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">Preview not available for this report type.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Click "Generate & Download PDF" to create the report.</p>
+          </div>
+        );
+    }
   };
 
   const handleGenerateReport = async () => {
@@ -769,6 +1296,9 @@ const ReportsPage = () => {
           break;
         case 'it_problems':
           await generateITProblemsReport();
+          break;
+        case 'permanent_devices':
+          await generatePermanentDevicesReport();
           break;
       }
     } catch (error) {
@@ -921,29 +1451,13 @@ const ReportsPage = () => {
                     Filter by User
                   </label>
                 </div>
-                <div className="relative">
-                  <select
-                    id="report-user-filter"
-                    name="userFilter"
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full px-4 py-3 pl-20 pr-10 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white appearance-none cursor-pointer font-medium"
-                  >
-                    <option value="all">All Users</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.full_name} - {user.department}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                    <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                    <Flag className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  </div>
-                  <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-600 dark:text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                <SearchableUserSelect
+                  users={users}
+                  value={selectedUserId}
+                  onChange={(userId) => setSelectedUserId(userId)}
+                  placeholder="Select User"
+                  showAllOption={true}
+                />
                 <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center mt-0.5">
@@ -997,6 +1511,43 @@ const ReportsPage = () => {
           </div>
         </div>
 
+        {/* Preview Section for ALL Reports */}
+        {previewData && (
+          <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-green-200 dark:border-green-800 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-green-900 dark:text-green-300">📋 Report Preview</h3>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {isLoadingPreview ? 'Loading...' : 
+                  previewData.type === 'warranty' 
+                    ? `${previewData.total || 0} total devices`
+                    : `${previewData.data?.length || 0} records`
+                }
+              </span>
+            </div>
+
+            {isLoadingPreview ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading preview...</p>
+              </div>
+            ) : (
+              <>
+                {previewData.data?.length > 20 && previewData.type !== 'warranty' && (
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-900 dark:text-blue-300">
+                      <span className="font-bold">Showing first 20 of {previewData.data.length} records</span> - Full data will be in PDF
+                    </p>
+                  </div>
+                )}
+                <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                  {/* Preview for each report type */}
+                  {renderPreviewTable()}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Recent Reports Section */}
         <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6">
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Report Guide</h3>
@@ -1035,6 +1586,12 @@ const ReportsPage = () => {
               <h4 className="font-semibold text-gray-900 dark:text-white mb-2">🔧 IT Problems Report</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 All IT support problems reported by employees with names, titles, and brief descriptions.
+              </p>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">⚠️ Delivery Note Required Report</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Users who MUST do delivery notes for specific devices - a reminder list with device details.
               </p>
             </div>
           </div>

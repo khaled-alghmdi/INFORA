@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
 import { Plus, Edit, Trash2, Search, UserCheck, UserX, Copy } from 'lucide-react';
+import SearchableDeviceSelect from '@/components/SearchableDeviceSelect';
 
 type User = {
   id: string;
@@ -14,6 +15,8 @@ type User = {
   department: string;
   role: string;
   is_active: boolean;
+  has_permanent_device?: boolean;
+  permanent_device_id?: string | null;
   initial_password: string | null;
   created_at: string;
   device_count?: number;
@@ -22,6 +25,7 @@ type User = {
 const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [devices, setDevices] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -38,6 +42,8 @@ const UsersPage = () => {
     department: '',
     role: 'user',
     is_active: true,
+    has_permanent_device: false,
+    permanent_device_id: '',
     initial_password: '',
   });
 
@@ -75,6 +81,7 @@ const UsersPage = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchDevices();
 
     // Set up real-time subscription for users
     const usersChannel = supabase
@@ -137,6 +144,17 @@ const UsersPage = () => {
     }
   };
 
+  const fetchDevices = async () => {
+    const { data } = await supabase
+      .from('devices')
+      .select('id, name, type, asset_number, serial_number, status')
+      .order('name');
+    
+    if (data) {
+      setDevices(data);
+    }
+  };
+
   const handleCopyEmployeeId = (employeeId: string) => {
     navigator.clipboard.writeText(employeeId);
     alert('Employee ID copied to clipboard!');
@@ -158,6 +176,12 @@ const UsersPage = () => {
     // Combine name fields into full_name
     const full_name = `${formData.first_name.trim()} ${formData.middle_name.trim()}${formData.last_name.trim() ? ' ' + formData.last_name.trim() : ''}`;
 
+    // Validate permanent device if checkbox is checked
+    if (formData.has_permanent_device && !formData.permanent_device_id) {
+      alert('Please select a device if user does not do delivery note');
+      return;
+    }
+
     // Prepare data
     const userData = {
       employee_id: formData.employee_id || null,
@@ -166,6 +190,8 @@ const UsersPage = () => {
       department: formData.department,
       role: formData.role,
       is_active: formData.is_active,
+      has_permanent_device: formData.has_permanent_device,
+      permanent_device_id: formData.has_permanent_device ? formData.permanent_device_id : null,
       initial_password: formData.initial_password || null,
       password_changed_at: null, // Force password change on first login
     };
@@ -196,6 +222,12 @@ const UsersPage = () => {
     // Combine name fields into full_name
     const full_name = `${formData.first_name.trim()} ${formData.middle_name.trim()}${formData.last_name.trim() ? ' ' + formData.last_name.trim() : ''}`;
 
+    // Validate permanent device if checkbox is checked
+    if (formData.has_permanent_device && !formData.permanent_device_id) {
+      alert('Please select a device for delivery note reminder');
+      return;
+    }
+
     // Prepare data
     const userData: any = {
       employee_id: formData.employee_id || null,
@@ -204,6 +236,8 @@ const UsersPage = () => {
       department: formData.department,
       role: formData.role,
       is_active: formData.is_active,
+      has_permanent_device: formData.has_permanent_device,
+      permanent_device_id: formData.has_permanent_device ? formData.permanent_device_id : null,
       initial_password: formData.initial_password || null,
     };
 
@@ -267,6 +301,8 @@ const UsersPage = () => {
       department: '',
       role: 'user',
       is_active: true,
+      has_permanent_device: false,
+      permanent_device_id: '',
       initial_password: '',
     });
   };
@@ -289,6 +325,8 @@ const UsersPage = () => {
       department: user.department,
       role: user.role,
       is_active: user.is_active,
+      has_permanent_device: user.has_permanent_device || false,
+      permanent_device_id: user.permanent_device_id || '',
       initial_password: user.initial_password || '',
     });
     setShowEditModal(true);
@@ -425,6 +463,9 @@ const UsersPage = () => {
                 <th className="px-1.5 py-1 text-center text-[8px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                   D
                 </th>
+                <th className="px-1.5 py-1 text-center text-[8px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter" title="Permanent Device">
+                  📋
+                </th>
                 <th className="px-1.5 py-1 text-left text-[8px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
                   Status
                 </th>
@@ -484,6 +525,13 @@ const UsersPage = () => {
                   <td className="px-1.5 py-0.5 text-center">
                     <span className="text-[10px] text-gray-900 dark:text-white font-bold">{user.device_count || 0}</span>
                   </td>
+                  <td className="px-1.5 py-0.5 text-center">
+                    {user.has_permanent_device ? (
+                      <span className="text-[14px]" title="REMINDER: User MUST do delivery note for specific device">⚠️</span>
+                    ) : (
+                      <span className="text-[14px] text-gray-300 dark:text-gray-600" title="No special delivery note requirement">➖</span>
+                    )}
+                  </td>
                   <td className="px-1.5 py-0.5 whitespace-nowrap">
                     <button
                       onClick={() => handleToggleStatus(user)}
@@ -533,10 +581,13 @@ const UsersPage = () => {
 
         {/* Add User Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add New User</h2>
-              <div className="space-y-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Add New User</h2>
+              </div>
+              <div className="overflow-y-auto flex-1 p-6">
+              <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -633,35 +684,81 @@ const UsersPage = () => {
                   />
                   <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">🔐 Required for user to login. They should change it on first login.</p>
                 </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
-                  />
-                  <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                    Active User
-                  </label>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="is_active"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
+                    />
+                    <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      Active User
+                    </label>
+                  </div>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg space-y-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="has_permanent_device"
+                        checked={formData.has_permanent_device}
+                        onChange={(e) => {
+                          setFormData({ 
+                            ...formData, 
+                            has_permanent_device: e.target.checked,
+                            permanent_device_id: e.target.checked ? formData.permanent_device_id : ''
+                          });
+                        }}
+                        className="h-4 w-4 text-red-600 dark:text-red-400 focus:ring-red-500 border-gray-300 dark:border-gray-600 rounded"
+                      />
+                      <label htmlFor="has_permanent_device" className="ml-2 block text-sm font-medium text-red-900 dark:text-red-300">
+                        ⚠️ REMINDER: User MUST Do Delivery Note for Specific Device
+                      </label>
+                    </div>
+                    
+                    {formData.has_permanent_device && (
+                      <div className="pl-6 space-y-2">
+                        <label className="block text-sm font-semibold text-red-900 dark:text-red-300">
+                          Select Device (User MUST do delivery note for this device):
+                        </label>
+                        <SearchableDeviceSelect
+                          devices={devices}
+                          value={formData.permanent_device_id}
+                          onChange={(deviceId) => setFormData({ ...formData, permanent_device_id: deviceId })}
+                          placeholder="-- Select Device --"
+                          required={formData.has_permanent_device}
+                        />
+                        <p className="text-xs text-red-700 dark:text-red-300 font-bold">
+                          📝 REMINDER: This user MUST do delivery note for the selected device!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 ml-6">
+                    ℹ️ Check this to flag/remind admin that user MUST do delivery note for specific device
+                  </p>
                 </div>
               </div>
-              <div className="flex justify-end space-x-4 mt-6">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddUser}
-                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
-                >
-                  Add User
-                </button>
+              </div>
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      resetForm();
+                    }}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddUser}
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
+                  >
+                    Add User
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -669,10 +766,13 @@ const UsersPage = () => {
 
         {/* Edit User Modal */}
         {showEditModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Edit User</h2>
-              <div className="space-y-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Edit User</h2>
+              </div>
+              <div className="overflow-y-auto flex-1 p-6">
+              <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -769,36 +869,82 @@ const UsersPage = () => {
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Update password or leave blank</p>
                 </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="edit_is_active"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
-                  />
-                  <label htmlFor="edit_is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                    Active User
-                  </label>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="edit_is_active"
+                      checked={formData.is_active}
+                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                      className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
+                    />
+                    <label htmlFor="edit_is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      Active User
+                    </label>
+                  </div>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg space-y-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="edit_has_permanent_device"
+                        checked={formData.has_permanent_device}
+                        onChange={(e) => {
+                          setFormData({ 
+                            ...formData, 
+                            has_permanent_device: e.target.checked,
+                            permanent_device_id: e.target.checked ? formData.permanent_device_id : ''
+                          });
+                        }}
+                        className="h-4 w-4 text-red-600 dark:text-red-400 focus:ring-red-500 border-gray-300 dark:border-gray-600 rounded"
+                      />
+                      <label htmlFor="edit_has_permanent_device" className="ml-2 block text-sm font-medium text-red-900 dark:text-red-300">
+                        ⚠️ REMINDER: User MUST Do Delivery Note for Specific Device
+                      </label>
+                    </div>
+                    
+                    {formData.has_permanent_device && (
+                      <div className="pl-6 space-y-2">
+                        <label className="block text-sm font-semibold text-red-900 dark:text-red-300">
+                          Select Device (User MUST do delivery note for this device):
+                        </label>
+                        <SearchableDeviceSelect
+                          devices={devices}
+                          value={formData.permanent_device_id}
+                          onChange={(deviceId) => setFormData({ ...formData, permanent_device_id: deviceId })}
+                          placeholder="-- Select Device --"
+                          required={formData.has_permanent_device}
+                        />
+                        <p className="text-xs text-red-700 dark:text-red-300 font-bold">
+                          📝 REMINDER: This user MUST do delivery note for the selected device!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 ml-6">
+                    ℹ️ Check this to flag/remind admin that user MUST do delivery note for specific device
+                  </p>
                 </div>
               </div>
-              <div className="flex justify-end space-x-4 mt-6">
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    resetForm();
-                    setSelectedUser(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleEditUser}
-                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
-                >
-                  Save Changes
-                </button>
+              </div>
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      resetForm();
+                      setSelectedUser(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEditUser}
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
             </div>
           </div>

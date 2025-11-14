@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
-import { Plus, AlertCircle, Laptop, Search, Filter, CheckCircle, XCircle, Clock, PlayCircle } from 'lucide-react';
+import { Plus, AlertCircle, Laptop, Search, Filter, CheckCircle, XCircle, Clock, PlayCircle, Trash2 } from 'lucide-react';
 import { getCurrentUser as getAuthUser } from '@/lib/auth';
 
 type RequestType = 'device_request' | 'it_support';
@@ -314,6 +314,44 @@ const RequestsPage = () => {
     }
   };
 
+  const handleDeleteClosedRequests = async () => {
+    const closedCount = requests.filter(r => r.status === 'closed' || r.status === 'completed').length;
+    
+    if (closedCount === 0) {
+      alert('No closed or completed requests to delete.');
+      return;
+    }
+
+    const confirmed = confirm(
+      `⚠️ Delete ${closedCount} closed/completed requests?\n\n` +
+      'This will permanently delete all requests with status:\n' +
+      '• Closed\n' +
+      '• Completed\n\n' +
+      'This action CANNOT be undone. Continue?'
+    );
+    
+    if (!confirmed) return;
+
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('requests')
+        .delete()
+        .in('status', ['closed', 'completed']);
+      
+      if (error) throw error;
+
+      alert(`✓ Successfully deleted ${closedCount} closed/completed requests!`);
+      await fetchRequests();
+    } catch (error: any) {
+      console.error('Error deleting requests:', error);
+      alert(`Error deleting requests: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex">
       <Sidebar />
@@ -322,6 +360,7 @@ const RequestsPage = () => {
           title="Requests"
           description="Submit device requests and IT support tickets"
           action={
+            <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowRequestModal(true)}
               className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg"
@@ -329,6 +368,14 @@ const RequestsPage = () => {
               <Plus className="w-5 h-5" />
               <span>New Request</span>
             </button>
+              <button
+                onClick={handleDeleteClosedRequests}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span>Delete Closed</span>
+              </button>
+            </div>
           }
         />
 

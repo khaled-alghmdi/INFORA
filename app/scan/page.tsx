@@ -132,27 +132,19 @@ const ScanPage = () => {
       }, ...prev.slice(0, 9)]);
 
     } else {
-      // Search for user by multiple criteria
+      // ENHANCED: Search for user by multiple criteria (name, email, employee ID, department)
       let usersFound: any[] = [];
       
-      // Try exact match on employee_id first
-      const { data: byEmployeeId } = await supabase
+      // Search by all fields with partial matching (more flexible search)
+      const { data: searchResults } = await supabase
         .from('users')
         .select('*')
-        .eq('employee_id', searchTerm);
-      
-      if (byEmployeeId && byEmployeeId.length > 0) {
-        usersFound = byEmployeeId;
-      } else {
-        // Try other fields with partial matching
-        const { data: byOtherFields } = await supabase
-          .from('users')
-          .select('*')
-          .or(`id.eq.${searchTerm},full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,department.ilike.%${searchTerm}%`);
+        .or(`employee_id.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,department.ilike.%${searchTerm}%,id.eq.${searchTerm}`)
+        .eq('is_active', true)
+        .order('full_name');
         
-        if (byOtherFields && byOtherFields.length > 0) {
-          usersFound = byOtherFields;
-        }
+      if (searchResults && searchResults.length > 0) {
+        usersFound = searchResults;
       }
 
       if (usersFound.length === 0) {

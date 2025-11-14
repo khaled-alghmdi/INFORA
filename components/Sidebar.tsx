@@ -76,9 +76,6 @@ const Sidebar = () => {
                 )}
                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-green-400'} transition-colors`} />
                 <span className="font-medium">{item.label}</span>
-                {isActive && (
-                  <div className="absolute right-2 w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                )}
               </Link>
             );
           })}

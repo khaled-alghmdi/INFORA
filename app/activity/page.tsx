@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
-import { Activity, Search, Filter, Download, User, Monitor, AlertCircle, CheckCircle, XCircle, UserPlus, UserMinus } from 'lucide-react';
+import { Activity, Search, Filter, Download, User, Monitor, AlertCircle, CheckCircle, XCircle, UserPlus, UserMinus, Trash2 } from 'lucide-react';
 
 type ActivityLog = {
   id: string;
@@ -198,6 +198,42 @@ const ActivityLogPage = () => {
     a.click();
   };
 
+  const handleDeleteAllLogs = async () => {
+    const confirmed = confirm(
+      '⚠️ Warning: This will delete ALL activity logs permanently!\n\n' +
+      'This includes:\n' +
+      '• All assignment records\n' +
+      '• All device updates\n' +
+      '• All request activities\n\n' +
+      'This action CANNOT be undone. Are you sure?'
+    );
+    
+    if (!confirmed) return;
+
+    const doubleConfirm = confirm('Are you ABSOLUTELY sure? Type YES to confirm.');
+    if (!doubleConfirm) return;
+
+    setLoading(true);
+    
+    try {
+      // Delete all assignments (main source of logs)
+      const { error: assignError } = await supabase
+        .from('assignments')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (assignError) throw assignError;
+
+      alert('✓ All activity logs have been deleted successfully!');
+      await fetchActivities();
+    } catch (error: any) {
+      console.error('Error deleting logs:', error);
+      alert(`Error deleting logs: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex">
       <Sidebar />
@@ -206,6 +242,7 @@ const ActivityLogPage = () => {
           title="Activity Log"
           description="Track all system activities and changes"
           action={
+            <div className="flex items-center space-x-3">
             <button
               onClick={exportToCSV}
               className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg"
@@ -213,6 +250,14 @@ const ActivityLogPage = () => {
               <Download className="w-5 h-5" />
               <span>Export CSV</span>
             </button>
+              <button
+                onClick={handleDeleteAllLogs}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span>Delete All Logs</span>
+              </button>
+            </div>
           }
         />
 
