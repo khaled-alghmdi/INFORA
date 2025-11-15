@@ -9,6 +9,7 @@ import { Monitor, Users, Package, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 type DashboardStats = {
   totalDevices: number;
@@ -223,19 +224,31 @@ const Dashboard = () => {
               <span className="w-2 h-8 bg-gradient-to-b from-green-600 to-emerald-700 rounded-full"></span>
               <span>Quick Actions</span>
             </h3>
-            <div className="space-y-3">
-              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/devices?action=add"
+                className="group relative block w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden text-center"
+                aria-label="Add a new device"
+              >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <span className="relative font-semibold">Add New Device</span>
-              </button>
-              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
+              </Link>
+              <Link
+                href="/devices?action=assign"
+                className="group relative block w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden text-center"
+                aria-label="Assign an existing device"
+              >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <span className="relative font-semibold">Assign Device</span>
-              </button>
-              <button className="group relative w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden">
+              </Link>
+              <Link
+                href="/reports"
+                className="group relative block w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl hover:from-green-700 hover:to-emerald-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02] overflow-hidden text-center"
+                aria-label="Generate reports"
+              >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                 <span className="relative font-semibold">Generate Report</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
@@ -84,12 +84,7 @@ const ReportsPage = () => {
     loadLogo();
   }, []);
 
-  useEffect(() => {
-    // Load preview when report type changes
-    loadPreviewData();
-  }, [selectedReport, selectedUserId, startDate, endDate]);
-
-  const loadPreviewData = async () => {
+  const loadPreviewData = useCallback(async () => {
     setIsLoadingPreview(true);
     
     try {
@@ -207,7 +202,7 @@ const ReportsPage = () => {
     } finally {
       setIsLoadingPreview(false);
     }
-  };
+  }, [selectedReport, selectedUserId, startDate, endDate]);
 
   const loadLogo = () => {
     const img = new Image();
@@ -311,15 +306,15 @@ const ReportsPage = () => {
       
       for (const row of data) {
         const userInfo = Array.isArray(row.users) ? row.users[0] : row.users;
+        const deviceInfo = Array.isArray(row.devices) ? row.devices[0] : row.devices;
 
         // Add ASSIGNED operation
         allOps.push({
           date: row.assigned_date,
-          deviceName: row.devices?.name || 'N/A',
-          assetNo: row.devices?.asset_number || 'N/A',
-          deviceType: row.devices?.type || 'N/A',
-          serial: row.devices?.serial_number || 'N/A',
-            serial: row.devices?.serial_number || 'N/A',
+          deviceName: deviceInfo?.name || 'N/A',
+          assetNo: deviceInfo?.asset_number || 'N/A',
+          deviceType: deviceInfo?.type || 'N/A',
+          serial: deviceInfo?.serial_number || 'N/A',
           userName: userInfo?.full_name || 'N/A',
           dept: userInfo?.department || 'N/A',
           action: 'ASSIGNED',
@@ -1258,11 +1253,16 @@ const ReportsPage = () => {
         return (
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400">Preview not available for this report type.</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Click "Generate & Download PDF" to create the report.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Click the Generate &amp; Download PDF button to create the report.</p>
           </div>
         );
     }
   };
+
+  useEffect(() => {
+    // Load preview when report type changes
+    loadPreviewData();
+  }, [loadPreviewData]);
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);

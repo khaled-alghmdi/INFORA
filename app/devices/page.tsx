@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
 import { Plus, Edit, Trash2, Search, Filter, Shield, ShieldAlert } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 type Device = {
   id: string;
@@ -29,6 +30,7 @@ type User = {
 };
 
 const DevicesPage = () => {
+  const searchParams = useSearchParams();
   const [devices, setDevices] = useState<Device[]>([]);
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -38,6 +40,7 @@ const DevicesPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showAssignHint, setShowAssignHint] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -98,6 +101,20 @@ const DevicesPage = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'add') {
+      setShowAddModal(true);
+    }
+    if (action === 'assign') {
+      setShowAssignHint(true);
+      const table = document.getElementById('devices-table');
+      if (table) {
+        table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     filterDevices();
@@ -264,6 +281,7 @@ const DevicesPage = () => {
       setShowAssignModal(false);
       fetchDevices();
       setSelectedDevice(null);
+      setShowAssignHint(false);
     }
   };
 
@@ -388,6 +406,11 @@ const DevicesPage = () => {
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6 mb-6">
+          {showAssignHint && (
+            <div className="mb-4 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:bg-green-900/30 dark:text-green-100 dark:border-green-700">
+              Select a device in the table below, choose Assign from its actions column, and pick the target user to complete the assignment.
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -424,7 +447,7 @@ const DevicesPage = () => {
         </div>
 
         {/* Devices Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div id="devices-table" className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-[10px]">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
