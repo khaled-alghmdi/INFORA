@@ -4,7 +4,22 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
-import { Activity, Search, Filter, Download, User, Monitor, AlertCircle, CheckCircle, XCircle, UserPlus, UserMinus, Trash2 } from 'lucide-react';
+import {
+  Activity,
+  Search,
+  Filter,
+  Download,
+  User,
+  Monitor,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  UserPlus,
+  UserMinus,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+} from 'lucide-react';
 
 type ActivityLog = {
   id: string;
@@ -22,6 +37,11 @@ const ActivityLogPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
+  const [isDeletingLogs, setIsDeletingLogs] = useState(false);
+  const [deleteFeedback, setDeleteFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const isDeleteConfirmationValid = deleteConfirmationInput.trim().toUpperCase() === 'YES';
 
   const filterActivities = useCallback(() => {
     let filtered = [...activities];
@@ -198,46 +218,53 @@ const ActivityLogPage = () => {
     a.click();
   };
 
-  const handleDeleteAllLogs = async () => {
-    const confirmed = confirm(
-      '⚠️ Warning: This will delete ALL activity logs permanently!\n\n' +
-      'This includes:\n' +
-      '• All assignment records\n' +
-      '• All device updates\n' +
-      '• All request activities\n\n' +
-      'This action CANNOT be undone. Are you sure?'
-    );
-    
-    if (!confirmed) return;
+  const handleOpenDeleteModal = () => {
+    setDeleteFeedback(null);
+    setDeleteConfirmationInput('');
+    setIsDeleteModalOpen(true);
+  };
 
-    const doubleConfirm = confirm('Are you ABSOLUTELY sure? Type YES to confirm.');
-    if (!doubleConfirm) return;
+  const handleCancelDeleteLogs = () => {
+    if (isDeletingLogs) return;
+    setIsDeleteModalOpen(false);
+    setDeleteConfirmationInput('');
+  };
 
-    setLoading(true);
-    
+  const handleConfirmDeleteLogs = async () => {
+    if (deleteConfirmationInput.trim().toUpperCase() !== 'YES') return;
+    setIsDeletingLogs(true);
+
     try {
-      // Delete all assignments (main source of logs)
-      const { error: assignError } = await supabase
-        .from('assignments')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-      
-      if (assignError) throw assignError;
+      const { error: assignError } = await supabase.from('assignments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-      alert('✓ All activity logs have been deleted successfully!');
+      if (assignError) {
+        throw assignError;
+      }
+
+      setDeleteFeedback({
+        type: 'success',
+        message: 'All activity logs have been deleted successfully.',
+      });
+
       await fetchActivities();
+      setIsDeleteModalOpen(false);
+      setDeleteConfirmationInput('');
     } catch (error: any) {
       console.error('Error deleting logs:', error);
-      alert(`Error deleting logs: ${error.message}`);
+      setDeleteFeedback({
+        type: 'error',
+        message: `Error deleting logs: ${error.message ?? 'Unknown error'}`,
+      });
     } finally {
-      setLoading(false);
+      setIsDeletingLogs(false);
     }
   };
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen p-8">
+    <>
+      <div className="flex">
+        <Sidebar />
+        <main className="ml-64 flex-1 min-h-screen p-8">
         <PageHeader
           title="Activity Log"
           description="Track all system activities and changes"
@@ -251,7 +278,7 @@ const ActivityLogPage = () => {
               <span>Export CSV</span>
             </button>
               <button
-                onClick={handleDeleteAllLogs}
+                onClick={handleOpenDeleteModal}
                 className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg"
               >
                 <Trash2 className="w-5 h-5" />
@@ -260,6 +287,18 @@ const ActivityLogPage = () => {
             </div>
           }
         />
+
+        {deleteFeedback && (
+          <div
+            className={`mb-6 rounded-xl border px-4 py-3 text-sm font-medium ${
+              deleteFeedback.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-900/40 dark:bg-green-900/10 dark:text-green-200'
+                : 'border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-200'
+            }`}
+          >
+            {deleteFeedback.message}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-gray-100 dark:border-gray-700 p-6 mb-6">
@@ -393,8 +432,100 @@ const ActivityLogPage = () => {
             </div>
           )}
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+
+      {isDeleteModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Delete all activity logs confirmation dialog"
+          tabIndex={-1}
+          onClick={handleCancelDeleteLogs}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.stopPropagation();
+              handleCancelDeleteLogs();
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl dark:bg-gray-900"
+            role="document"
+            tabIndex={0}
+            aria-label="Delete logs confirmation content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center gap-4 rounded-xl bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
+              <AlertTriangle className="h-10 w-10" />
+              <div>
+                <p className="text-lg font-semibold">This action is permanent</p>
+                <p className="text-sm text-red-600 dark:text-red-200/80">
+                  Deleting all activity logs cannot be undone. Please review the details below before you continue.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-4 text-sm text-gray-600 dark:text-gray-300">
+              <p>The following data will be permanently removed:</p>
+              <ul className="list-disc space-y-2 pl-5">
+                <li>All assignment records</li>
+                <li>All device updates</li>
+                <li>All request activities</li>
+              </ul>
+              <p className="font-semibold text-gray-900 dark:text-white">Type YES to confirm you understand.</p>
+            </div>
+
+            <label className="mt-6 block text-sm font-medium text-gray-700 dark:text-gray-200" htmlFor="delete-confirmation-input">
+              Confirmation
+            </label>
+            <input
+              id="delete-confirmation-input"
+              value={deleteConfirmationInput}
+              onChange={(event) => setDeleteConfirmationInput(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-gray-200 px-4 py-3 text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-red-400 dark:focus:ring-red-900/40"
+              placeholder="Type YES to proceed"
+              aria-label="Type YES to confirm deletion"
+              tabIndex={0}
+            />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">You must type YES in all caps to enable deletion.</p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={handleCancelDeleteLogs}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 sm:w-32"
+                tabIndex={0}
+                aria-label="Cancel deletion"
+                disabled={isDeletingLogs}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteLogs}
+                className={`w-full rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 text-center font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 sm:w-40 ${
+                  !isDeleteConfirmationValid || isDeletingLogs ? 'opacity-60 cursor-not-allowed' : 'hover:from-red-700 hover:to-red-800'
+                }`}
+                tabIndex={0}
+                aria-label="Confirm delete all logs"
+                disabled={!isDeleteConfirmationValid || isDeletingLogs}
+              >
+                {isDeletingLogs ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Deleting...
+                  </span>
+                ) : (
+                  'Delete Everything'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

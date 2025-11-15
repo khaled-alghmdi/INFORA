@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan, Search, Upload } from 'lucide-react';
+import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan, Search, Upload, PenSquare, ShieldAlert } from 'lucide-react';
 import { getCurrentUser, logout } from '@/lib/auth';
 
 const Sidebar = () => {
@@ -32,6 +32,8 @@ const Sidebar = () => {
   const userNavItems = [
     { href: '/my-devices', label: 'My Devices', icon: Monitor },
     { href: '/my-requests', label: 'My Requests', icon: MessageSquare },
+    { href: '/delivery-note', label: 'Delivery Note', icon: PenSquare },
+    { href: '/incident-request', label: 'Incident Request', icon: ShieldAlert },
   ];
 
   // Select navigation based on user role

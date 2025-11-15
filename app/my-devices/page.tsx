@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
-import { Package, Laptop, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
+import { Package, Laptop, Sunrise, Sun, Sunset, Moon, FileText, AlertTriangle, ExternalLink } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 
 type Device = {

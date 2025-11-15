@@ -53,6 +53,27 @@ const NotificationsPage = () => {
       if (error) {
         console.log('Note: notification_views table may not exist yet.');
       }
+
+      window.dispatchEvent(new CustomEvent('notifications-viewed'));
+
+      const isAdmin = currentUser?.role === 'admin';
+
+      if (isAdmin) {
+        await supabase.rpc('mark_admin_requests_read', { user_id_input: userId });
+        setAlerts([]);
+        setStats({
+          pendingRequests: 0,
+          urgentRequests: 0,
+          expiringWarranties: 0,
+          maintenanceDevices: 0,
+        });
+      } else {
+        await Promise.all([
+          supabase.rpc('mark_user_requests_read', { user_id_input: userId }),
+          supabase.rpc('mark_user_devices_read', { user_id_input: userId }),
+        ]);
+        setAlerts([]);
+      }
     } catch (err) {
       console.log('Notification tracking not enabled');
     }
@@ -303,6 +324,17 @@ const NotificationsPage = () => {
         <PageHeader
           title={isAdmin ? "System Notifications" : "My Notifications"}
           description={isAdmin ? "Monitor system alerts and pending actions" : "View updates on your requests and devices"}
+          action={
+            <button
+              onClick={() => currentUser && markNotificationsAsViewed(currentUser.id)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold shadow hover:shadow-lg transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Mark all as read
+            </button>
+          }
         />
 
         {/* Admin Stats Cards - ONLY FOR ADMINS */}

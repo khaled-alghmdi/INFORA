@@ -685,18 +685,18 @@ const UsersPage = () => {
                   <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">🔐 Required for user to login. They should change it on first login.</p>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="is_active"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
-                    />
-                    <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      Active User
-                    </label>
-                  </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    checked={formData.is_active}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
+                  />
+                  <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Active User
+                  </label>
+                </div>
                   <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg space-y-3">
                     <div className="flex items-center">
                       <input
@@ -715,7 +715,7 @@ const UsersPage = () => {
                       <label htmlFor="has_permanent_device" className="ml-2 block text-sm font-medium text-red-900 dark:text-red-300">
                         ⚠️ REMINDER: User MUST Do Delivery Note for Specific Device
                       </label>
-                    </div>
+              </div>
                     
                     {formData.has_permanent_device && (
                       <div className="pl-6 space-y-2">
@@ -743,21 +743,21 @@ const UsersPage = () => {
               </div>
               <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                 <div className="flex justify-end space-x-4">
-                  <button
-                    onClick={() => {
-                      setShowAddModal(false);
-                      resetForm();
-                    }}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleAddUser}
-                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
-                  >
-                    Add User
-                  </button>
+                <button
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForm();
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddUser}
+                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
+                >
+                  Add User
+                </button>
                 </div>
               </div>
             </div>
@@ -870,18 +870,18 @@ const UsersPage = () => {
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Update password or leave blank</p>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="edit_is_active"
-                      checked={formData.is_active}
-                      onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                      className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
-                    />
-                    <label htmlFor="edit_is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      Active User
-                    </label>
-                  </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="edit_is_active"
+                    checked={formData.is_active}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="h-4 w-4 text-green-600 dark:text-green-400 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
+                  />
+                  <label htmlFor="edit_is_active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    Active User
+                  </label>
+                </div>
                   <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg space-y-3">
                     <div className="flex items-center">
                       <input
@@ -900,7 +900,7 @@ const UsersPage = () => {
                       <label htmlFor="edit_has_permanent_device" className="ml-2 block text-sm font-medium text-red-900 dark:text-red-300">
                         ⚠️ REMINDER: User MUST Do Delivery Note for Specific Device
                       </label>
-                    </div>
+              </div>
                     
                     {formData.has_permanent_device && (
                       <div className="pl-6 space-y-2">
@@ -928,22 +928,22 @@ const UsersPage = () => {
               </div>
               <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                 <div className="flex justify-end space-x-4">
-                  <button
-                    onClick={() => {
-                      setShowEditModal(false);
-                      resetForm();
-                      setSelectedUser(null);
-                    }}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleEditUser}
-                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
-                  >
-                    Save Changes
-                  </button>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    resetForm();
+                    setSelectedUser(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditUser}
+                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
+                >
+                  Save Changes
+                </button>
                 </div>
               </div>
             </div>

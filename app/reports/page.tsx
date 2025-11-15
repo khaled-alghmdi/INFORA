@@ -310,6 +310,8 @@ const ReportsPage = () => {
       const allOps = [];
       
       for (const row of data) {
+        const userInfo = Array.isArray(row.users) ? row.users[0] : row.users;
+
         // Add ASSIGNED operation
         allOps.push({
           date: row.assigned_date,
@@ -317,26 +319,14 @@ const ReportsPage = () => {
           assetNo: row.devices?.asset_number || 'N/A',
           deviceType: row.devices?.type || 'N/A',
           serial: row.devices?.serial_number || 'N/A',
-          userName: row.users?.full_name || 'N/A',
-          dept: row.users?.department || 'N/A',
+            serial: row.devices?.serial_number || 'N/A',
+          userName: userInfo?.full_name || 'N/A',
+          dept: userInfo?.department || 'N/A',
           action: 'ASSIGNED',
           notes: row.notes || '-'
         });
         
-        // Add RETURNED operation if exists
-        if (row.return_date) {
-          allOps.push({
-            date: row.return_date,
-            deviceName: row.devices?.name || 'N/A',
-            assetNo: row.devices?.asset_number || 'N/A',
-            deviceType: row.devices?.type || 'N/A',
-            serial: row.devices?.serial_number || 'N/A',
-            userName: row.users?.full_name || 'N/A',
-            dept: row.users?.department || 'N/A',
-            action: 'RETURNED',
-            notes: 'Returned to inventory'
-          });
-        }
+        // NOTE: We only log ASSIGNED events in preview to avoid duplicate rows
       }
       
       // Sort by date newest first

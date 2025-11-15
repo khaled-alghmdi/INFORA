@@ -77,6 +77,16 @@ const NotificationBell = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleViewed = () => {
+      setNotificationCount(0);
+      fetchNotificationCount();
+    };
+
+    window.addEventListener('notifications-viewed', handleViewed);
+    return () => window.removeEventListener('notifications-viewed', handleViewed);
+  }, []);
+
   const fetchNotificationCount = async () => {
     const currentUser = getCurrentUser();
     let count = 0;
