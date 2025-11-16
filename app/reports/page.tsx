@@ -8,6 +8,9 @@ import { FileText, Download, Calendar, User, Info, CheckCircle, Flag } from 'luc
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import SearchableUserSelect from '@/components/SearchableUserSelect';
+import { Button, SecondaryButton } from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
+import SkeletonRows from '@/components/ui/Skeleton';
 
 type ReportType = 
   | 'operations'
@@ -29,6 +32,7 @@ const ReportsPage = () => {
   const [logoDataUrl, setLogoDataUrl] = useState<string>('');
   const [previewData, setPreviewData] = useState<any>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
   
   // Date filters for operations report
   const [startDate, setStartDate] = useState<string>('');
@@ -83,6 +87,36 @@ const ReportsPage = () => {
     fetchUsers();
     loadLogo();
   }, []);
+
+  // Parse filters from URL on first load
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get('report') as ReportType | null;
+      const user = params.get('user');
+      const sd = params.get('start');
+      const ed = params.get('end');
+      if (type && ['operations','assets','user_devices','available_stock','warranty','it_problems','permanent_devices'].includes(type)) {
+        setSelectedReport(type);
+      }
+      if (user) setSelectedUserId(user);
+      if (sd) setStartDate(sd);
+      if (ed) setEndDate(ed);
+    } catch {}
+  }, []);
+
+  // Sync filters to URL (deep links)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      params.set('report', selectedReport);
+      params.set('user', selectedUserId || 'all');
+      if (startDate) params.set('start', startDate); else params.delete('start');
+      if (endDate) params.set('end', endDate); else params.delete('end');
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, '', newUrl);
+    } catch {}
+  }, [selectedReport, selectedUserId, startDate, endDate]);
 
   const loadPreviewData = useCallback(async () => {
     setIsLoadingPreview(true);
@@ -1264,6 +1298,176 @@ const ReportsPage = () => {
     loadPreviewData();
   }, [loadPreviewData]);
 
+  // Derived KPI helpers
+  const getKpis = () => {
+    if (!previewData) return null;
+    if (previewData.type === 'warranty') {
+      return {
+        total: previewData.total || 0,
+        under: previewData.underWarranty?.length || 0,
+        out: previewData.outOfWarranty?.length || 0,
+      };
+    }
+    return {
+      total: previewData.data?.length || 0,
+    };
+  };
+
+  const renderSkeleton = () => {
+    return (
+      <div className="space-y-3">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="animate-pulse grid grid-cols-6 gap-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded col-span-1"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded col-span-2"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded col-span-1"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded col-span-1"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded col-span-1"></div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // CSV Export helpers and handler
+  const escapeCsv = (value: any) => {
+    if (value === null || value === undefined) return '';
+    const s = String(value);
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+
+  const downloadCsv = (rows: string[][], filename: string) => {
+    const csv = rows.map(r => r.map(escapeCsv).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportCsv = async () => {
+    if (!previewData) return;
+    try {
+      setIsExportingCsv(true);
+      const today = new Date().toISOString().split('T')[0];
+
+      switch (previewData.type) {
+        case 'operations': {
+          const header = ['Date','Device','Asset No.','Type','Serial','User','Department','Notes'];
+          const rows = [header, ...(previewData.data || []).map((row: any) => [
+            new Date(row.assigned_date).toLocaleDateString(),
+            row.devices?.name || 'N/A',
+            row.devices?.asset_number || 'N/A',
+            row.devices?.type || 'N/A',
+            row.devices?.serial_number || 'N/A',
+            row.users?.full_name || 'N/A',
+            row.users?.department || 'N/A',
+            row.notes || '-',
+          ])];
+          downloadCsv(rows, `operations_${today}.csv`);
+          break;
+        }
+        case 'assets': {
+          const header = ['Device','Asset No.','Type','Serial Number','Assigned To','Department','Status','Purchase Date','Assigned Date'];
+          const rows = [header, ...(previewData.data || []).map((d: any) => [
+            d.name,
+            d.asset_number || 'N/A',
+            d.type,
+            d.serial_number,
+            d.users?.full_name || 'N/A',
+            d.users?.department || 'N/A',
+            d.status || 'unknown',
+            d.purchase_date || 'N/A',
+            d.assigned_date ? new Date(d.assigned_date).toLocaleDateString() : 'N/A',
+          ])];
+          downloadCsv(rows, `assets_${today}.csv`);
+          break;
+        }
+        case 'available_stock': {
+          const header = ['Type','Device Name','Asset No.','Serial Number','Specifications','Purchase Date','Warranty Expiry'];
+          const rows = [header, ...(previewData.data || []).map((d: any) => [
+            d.type, d.name, d.asset_number || 'N/A', d.serial_number, d.specifications || 'N/A', d.purchase_date || 'N/A', d.warranty_expiry || 'N/A'
+          ])];
+          downloadCsv(rows, `available_stock_${today}.csv`);
+          break;
+        }
+        case 'user_devices': {
+          const header = ['User Name','Email','Department','Device Name','Asset No.','Type','Serial Number','Assigned Date'];
+          const rows: string[][] = [header];
+          (previewData.data || []).forEach((u: any) => {
+            (u.devices || []).forEach((dev: any) => {
+              rows.push([
+                u.full_name, u.email, u.department, dev.name, dev.asset_number || 'N/A', dev.type, dev.serial_number, dev.assigned_date ? new Date(dev.assigned_date).toLocaleDateString() : 'N/A'
+              ]);
+            });
+          });
+          downloadCsv(rows, `user_devices_${today}.csv`);
+          break;
+        }
+        case 'it_problems': {
+          const header = ['Date','Employee','Department','Title','Description','Priority','Status'];
+          const rows = [header, ...(previewData.data || []).map((p: any) => [
+            new Date(p.created_at).toLocaleDateString(),
+            p.user?.full_name || 'N/A',
+            p.user?.department || 'N/A',
+            p.title,
+            p.description,
+            (p.priority || '').toUpperCase(),
+            (p.status || '').replace('_',' ').toUpperCase(),
+          ])];
+          downloadCsv(rows, `it_problems_${today}.csv`);
+          break;
+        }
+        case 'permanent_devices': {
+          const header = ['User Name','Email','Department','Employee ID','Device Name','Type','Asset No.','Serial Number','Status'];
+          const rows = [header, ...(previewData.data || []).map((u: any) => [
+            u.full_name, u.email, u.department, u.employee_id || 'N/A',
+            u.permanent_device?.name || 'N/A',
+            u.permanent_device?.type || 'N/A',
+            u.permanent_device?.asset_number || 'N/A',
+            u.permanent_device?.serial_number || 'N/A',
+            u.permanent_device?.status || 'N/A',
+          ])];
+          downloadCsv(rows, `delivery_note_required_${today}.csv`);
+          break;
+        }
+        case 'warranty': {
+          const header = ['Device Name','Asset No.','Type','Serial Number','Purchase Date','Warranty Ends/Ended','Status'];
+          const rowsUnder = [header, ...(previewData.underWarranty || []).map((device: any) => {
+            const purchaseDate = new Date(device.purchase_date);
+            const warrantyEndDate = new Date(purchaseDate);
+            warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 4);
+            return [
+              device.name, device.asset_number || 'N/A', device.type, device.serial_number,
+              device.purchase_date, warrantyEndDate.toLocaleDateString(), device.status
+            ];
+          })];
+          const rowsOut = [header, ...(previewData.outOfWarranty || []).map((device: any) => {
+            const purchaseDate = new Date(device.purchase_date);
+            const warrantyEndDate = new Date(purchaseDate);
+            warrantyEndDate.setFullYear(warrantyEndDate.getFullYear() + 4);
+            return [
+              device.name, device.asset_number || 'N/A', device.type, device.serial_number,
+              device.purchase_date, warrantyEndDate.toLocaleDateString(), device.status
+            ];
+          })];
+          if ((previewData.underWarranty || []).length) downloadCsv(rowsUnder, `warranty_under_${today}.csv`);
+          if ((previewData.outOfWarranty || []).length) downloadCsv(rowsOut, `warranty_out_${today}.csv`);
+          break;
+        }
+      }
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
+
   const handleGenerateReport = async () => {
     setIsGenerating(true);
 
@@ -1476,18 +1680,23 @@ const ReportsPage = () => {
               </div>
             )}
 
-            <button
-              onClick={handleGenerateReport}
-              disabled={isGenerating}
-              className={`flex items-center gap-3 px-6 py-3 rounded-lg font-semibold transition-all ${
-                isGenerating
-                  ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed text-white'
-                  : 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white shadow-md hover:shadow-lg'
-              }`}
-            >
-              <Download className="w-5 h-5" />
-              <span>{isGenerating ? 'Generating Report...' : 'Generate & Download PDF'}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                aria-label="Generate and download PDF"
+                onClick={handleGenerateReport}
+                disabled={isGenerating}
+                icon={<Download className="w-5 h-5" />}
+              >
+                {isGenerating ? 'Generating Report...' : 'Generate & Download PDF'}
+              </Button>
+              <SecondaryButton
+                aria-label="Export current preview to CSV"
+                onClick={handleExportCsv}
+                disabled={isLoadingPreview || !previewData || isExportingCsv}
+              >
+                {isExportingCsv ? 'Exporting CSV...' : 'Export CSV'}
+              </SecondaryButton>
+            </div>
 
             <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
               <h4 className="font-semibold text-green-900 dark:text-green-300 mb-2">Report Information:</h4>
@@ -1504,22 +1713,36 @@ const ReportsPage = () => {
         {/* Preview Section for ALL Reports */}
         {previewData && (
           <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md border-2 border-green-200 dark:border-green-800 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-green-900 dark:text-green-300">📋 Report Preview</h3>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {isLoadingPreview ? 'Loading...' : 
-                  previewData.type === 'warranty' 
-                    ? `${previewData.total || 0} total devices`
-                    : `${previewData.data?.length || 0} records`
-                }
-              </span>
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 px-6 pt-6 pb-4 bg-white/85 dark:bg-gray-800/85 backdrop-blur border-b border-green-200/60 dark:border-green-800/60">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-green-900 dark:text-green-300">📋 Report Preview</h3>
+                <div className="flex items-center gap-2">
+                  <Badge tone="brand">{selectedReport}</Badge>
+                  {selectedReport !== 'warranty' ? (
+                    <Badge tone="brand">{(getKpis()?.total || 0)} records</Badge>
+                  ) : (
+                    <>
+                      <Badge tone="brand">{(getKpis()?.total || 0)} devices</Badge>
+                      <Badge tone="success">{(getKpis()?.under || 0)} under</Badge>
+                      <Badge tone="danger">{(getKpis()?.out || 0)} out</Badge>
+                    </>
+                  )}
+                  {selectedReport === 'operations' && (
+                    <Badge tone="info" className="hidden md:inline-flex">
+                      {startDate || endDate ? `${startDate || '...'} → ${endDate || '...'}` : 'All dates'}
+                    </Badge>
+                  )}
+                  {(selectedReport === 'operations' || selectedReport === 'assets' || selectedReport === 'user_devices') && (
+                    <Badge className="hidden md:inline-flex">
+                      {selectedUserId === 'all' ? 'All users' : (users.find(u => u.id === selectedUserId)?.full_name || 'User')}
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
 
             {isLoadingPreview ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading preview...</p>
-              </div>
+              <div className="py-6"><SkeletonRows rows={6} /></div>
             ) : (
               <>
                 {previewData.data?.length > 20 && previewData.type !== 'warranty' && (
@@ -1529,10 +1752,16 @@ const ReportsPage = () => {
                     </p>
                   </div>
                 )}
-                <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg focus-within:ring-2 focus-within:ring-emerald-500">
                   {/* Preview for each report type */}
                   {renderPreviewTable()}
                 </div>
+                {previewData.data?.length === 0 && previewData.type !== 'warranty' && (
+                  <div className="mt-4 p-4 text-center border border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">No records match the current filters.</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Try adjusting the date range or selecting a different user.</p>
+                  </div>
+                )}
               </>
             )}
           </div>

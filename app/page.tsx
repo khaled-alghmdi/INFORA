@@ -10,6 +10,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { getCurrentUser } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Card from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 type DashboardStats = {
   totalDevices: number;
@@ -147,8 +149,7 @@ const Dashboard = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Bar Chart - Devices by Type */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Devices by Type</h3>
+          <Card title="Devices by Type" className="animate-fade-in">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={devicesByType}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -165,11 +166,10 @@ const Dashboard = () => {
                 </defs>
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </Card>
 
           {/* Pie Chart - Devices by Status */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Devices by Status</h3>
+          <Card title="Devices by Status" className="animate-fade-in">
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -189,18 +189,16 @@ const Dashboard = () => {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-          </div>
+          </Card>
         </div>
 
         {/* Users Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">User Statistics</h3>
-              <div className="bg-gradient-to-br from-green-600 to-emerald-700 p-2 rounded-lg">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-            </div>
+          <Card
+            title="User Statistics"
+            headerIcon={<div className="bg-gradient-to-br from-green-600 to-emerald-700 p-2 rounded-lg"><Users className="w-6 h-6 text-white" /></div>}
+            className="animate-fade-in"
+          >
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-400">Total Users</span>
@@ -217,13 +215,12 @@ const Dashboard = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-elegant-lg p-6 card-hover animate-fade-in border-2 border-gray-100 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
-              <span className="w-2 h-8 bg-gradient-to-b from-green-600 to-emerald-700 rounded-full"></span>
-              <span>Quick Actions</span>
-            </h3>
+          <Card
+            title={<div className="flex items-center space-x-2"><span className="w-2 h-8 bg-gradient-to-b from-green-600 to-emerald-700 rounded-full"></span><span>Quick Actions</span></div>}
+            className="animate-fade-in"
+          >
             <div className="flex flex-col gap-3">
               <Link
                 href="/devices?action=add"
@@ -250,7 +247,7 @@ const Dashboard = () => {
                 <span className="relative font-semibold">Generate Report</span>
               </Link>
             </div>
-          </div>
+          </Card>
         </div>
         </div>
       </main>
