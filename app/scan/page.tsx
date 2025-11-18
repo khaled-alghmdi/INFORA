@@ -135,16 +135,91 @@ const ScanPage = () => {
       // ENHANCED: Search for user by multiple criteria (name, email, employee ID, department)
       let usersFound: any[] = [];
       
-      // Search by all fields with partial matching (more flexible search)
-      const { data: searchResults } = await supabase
-        .from('users')
-        .select('*')
-        .or(`employee_id.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,department.ilike.%${searchTerm}%,id.eq.${searchTerm}`)
-        .eq('is_active', true)
-        .order('full_name');
+      // Trim and normalize search term
+      const normalizedTerm = searchTerm.trim().toLowerCase();
+      
+      // Escape special characters in search term for SQL LIKE patterns
+      const escapedTerm = normalizedTerm.replace(/[%_\\]/g, '\\$&');
+      const searchPattern = `%${escapedTerm}%`;
+      
+      // Search by all fields with partial matching
+      // Note: Supabase PostgREST requires proper formatting for ilike in .or() clauses
+      // For email, also try without escaping special characters (dots and @ are fine in LIKE)
+      const emailPattern = normalizedTerm.includes('@') 
+        ? `%${normalizedTerm.replace(/[%_\\]/g, '\\$&')}%`
+        : searchPattern;
+      
+      const searchQueries = [
+        supabase.from('users').select('*').ilike('full_name', searchPattern).eq('is_active', true),
+        supabase.from('users').select('*').ilike('email', emailPattern).eq('is_active', true),
+        supabase.from('users').select('*').ilike('department', searchPattern).eq('is_active', true),
+        supabase.from('users').select('*').ilike('employee_id', searchPattern).eq('is_active', true),
+      ];
+      
+      // Execute all searches in parallel
+      const results = await Promise.all(searchQueries);
+      
+      // Combine and deduplicate results
+      const allResults: any[] = [];
+      const seenIds = new Set<string>();
+      
+      results.forEach(({ data, error }, index) => {
+        if (error) {
+          console.error(`Search error for query ${index}:`, error);
+        } else if (data) {
+          data.forEach((user: any) => {
+            if (!seenIds.has(user.id)) {
+              seenIds.add(user.id);
+              allResults.push(user);
+            }
+          });
+        }
+      });
+      
+      // Also do client-side filtering as a fallback for email (in case database search misses)
+      if (allResults.length === 0 && normalizedTerm.includes('@')) {
+        // If search term looks like an email and no results, try fetching active users and filtering client-side
+        const { data: allActiveUsers } = await supabase
+          .from('users')
+          .select('*')
+          .eq('is_active', true);
+          
+        if (allActiveUsers) {
+          const clientFiltered = allActiveUsers.filter((user: any) => {
+            const userEmail = (user.email || '').toLowerCase().trim();
+            const userName = (user.full_name || '').toLowerCase().trim();
+            const userDept = (user.department || '').toLowerCase().trim();
+            const userEmpId = (user.employee_id || '').toLowerCase().trim();
+            
+            return (
+              userEmail.includes(normalizedTerm) ||
+              userName.includes(normalizedTerm) ||
+              userDept.includes(normalizedTerm) ||
+              userEmpId.includes(normalizedTerm)
+            );
+          });
+          
+          if (clientFiltered.length > 0) {
+            allResults.push(...clientFiltered);
+          }
+        }
+      }
         
-      if (searchResults && searchResults.length > 0) {
-        usersFound = searchResults;
+      if (allResults.length > 0) {
+        // Remove duplicates again after client-side filtering
+        const uniqueResults: any[] = [];
+        const finalSeenIds = new Set<string>();
+        allResults.forEach((user: any) => {
+          if (!finalSeenIds.has(user.id)) {
+            finalSeenIds.add(user.id);
+            uniqueResults.push(user);
+          }
+        });
+        
+        // Sort by full_name
+        usersFound = uniqueResults.sort((a, b) => 
+          (a.full_name || '').localeCompare(b.full_name || '')
+        );
       }
 
       if (usersFound.length === 0) {
