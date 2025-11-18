@@ -1,59 +1,13 @@
 const WaveBackground = () => {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-      {/* Background base color */}
-      <div className="absolute inset-0 bg-gray-50 dark:bg-gray-900"></div>
-      
-      {/* Pulsing dots pattern - grid layout */}
-      <div className="absolute inset-0">
-        {/* Row 1 */}
-        <div className="absolute top-[10%] left-[10%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[10%] left-[25%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[10%] left-[40%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[10%] left-[55%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[10%] left-[70%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[10%] left-[85%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-
-        {/* Row 2 */}
-        <div className="absolute top-[25%] left-[10%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[25%] left-[25%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[25%] left-[40%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[25%] left-[55%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[25%] left-[70%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[25%] left-[85%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-
-        {/* Row 3 */}
-        <div className="absolute top-[40%] left-[10%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[40%] left-[25%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[40%] left-[40%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[40%] left-[55%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[40%] left-[70%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[40%] left-[85%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-
-        {/* Row 4 */}
-        <div className="absolute top-[55%] left-[10%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[55%] left-[25%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[55%] left-[40%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[55%] left-[55%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[55%] left-[70%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[55%] left-[85%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-
-        {/* Row 5 */}
-        <div className="absolute top-[70%] left-[10%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[70%] left-[25%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[70%] left-[40%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[70%] left-[55%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[70%] left-[70%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[70%] left-[85%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-
-        {/* Row 6 */}
-        <div className="absolute top-[85%] left-[10%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[85%] left-[25%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[85%] left-[40%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-        <div className="absolute top-[85%] left-[55%] w-1 h-1 bg-teal-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-2000"></div>
-        <div className="absolute top-[85%] left-[70%] w-1 h-1 bg-green-500 rounded-full opacity-[0.15] animate-pulse-soft animation-delay-4000"></div>
-        <div className="absolute top-[85%] left-[85%] w-1 h-1 bg-emerald-500 rounded-full opacity-[0.15] animate-pulse-soft"></div>
-      </div>
+      {/* Plain background with subtle green/emerald gradient */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(135deg, rgba(209, 250, 229, 0.3) 0%, rgba(167, 243, 208, 0.25) 25%, rgba(110, 231, 183, 0.2) 50%, rgba(52, 211, 153, 0.15) 75%, rgba(16, 185, 129, 0.1) 100%)',
+        }}
+      />
     </div>
   );
 };
