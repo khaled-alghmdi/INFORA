@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan, Search, Upload, PenSquare, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan, Search, Upload, PenSquare, ShieldAlert, AlertCircle } from 'lucide-react';
 import { getCurrentUser, logout } from '@/lib/auth';
 
 const Sidebar = () => {
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     setCurrentUser(getCurrentUser());
@@ -40,9 +41,16 @@ const Sidebar = () => {
   const navItems = currentUser?.role === 'admin' ? adminNavItems : userNavItems;
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
-      logout();
-    }
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false);
+    logout();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -53,11 +61,11 @@ const Sidebar = () => {
             <div className="absolute inset-0 bg-green-500 rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
             <Image src="/Tamer_logo.png" alt="Tamer Logo" width={45} height={45} className="relative object-contain transform group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-green-600 via-emerald-700 to-emerald-700 bg-clip-text text-transparent animate-pulse-soft">
+          <h1 className="text-2xl font-extrabold text-white animate-pulse-soft" style={{ textShadow: '-1px -1px 0 #065f46, 1px -1px 0 #065f46, -1px 1px 0 #065f46, 1px 1px 0 #065f46, 0 -1px 0 #065f46, 0 1px 0 #065f46, -1px 0 0 #065f46, 1px 0 0 #065f46' }}>
             INFORA
           </h1>
         </div>
-        <nav className="space-y-1">
+        <nav className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#4b5563 #1f2937' }}>
           {navItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -110,6 +118,67 @@ const Sidebar = () => {
           </button>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Logout confirmation dialog"
+          tabIndex={-1}
+          onClick={handleCancelLogout}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.stopPropagation();
+              handleCancelLogout();
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-gray-900"
+            role="document"
+            tabIndex={0}
+            aria-label="Logout confirmation content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center gap-4 rounded-xl bg-orange-50 p-4 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200">
+              <AlertCircle className="h-10 w-10 flex-shrink-0" />
+              <div>
+                <p className="text-lg font-semibold">Logout Confirmation</p>
+                <p className="text-sm text-orange-600 dark:text-orange-200/80">
+                  Are you sure you want to logout?
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 text-sm text-gray-600 dark:text-gray-300">
+              <p>You will be redirected to the login page and will need to sign in again to access the system.</p>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={handleCancelLogout}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 sm:w-32"
+                tabIndex={0}
+                aria-label="Cancel logout"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 text-center font-semibold text-white transition hover:from-red-700 hover:to-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 sm:w-32"
+                tabIndex={0}
+                aria-label="Confirm logout"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };
