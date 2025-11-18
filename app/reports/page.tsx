@@ -1506,7 +1506,7 @@ const ReportsPage = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen p-8">
+      <main className="ml-20 flex-1 min-h-screen p-8 transition-all duration-300">
         <PageHeader
           title="Reports"
           description="Generate and export reports from the database"

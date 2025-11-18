@@ -54,14 +54,14 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-white min-h-screen fixed left-0 top-0 shadow-2xl border-r border-gray-700 dark:border-gray-800 z-40 overflow-y-auto">
-      <div className="p-6 pb-32">
-        <div className="flex items-center space-x-3 mb-8 group">
+    <aside className="group w-20 hover:w-64 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-white min-h-screen fixed left-0 top-0 shadow-2xl border-r border-gray-700 dark:border-gray-800 z-40 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out">
+      <div className="p-4 group-hover:p-6 pb-32 transition-all duration-300">
+        <div className="flex items-center justify-center group-hover:justify-start space-x-3 mb-8 transition-all duration-300">
           <div className="relative">
             <div className="absolute inset-0 bg-green-500 rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
             <Image src="/Tamer_logo.png" alt="Tamer Logo" width={45} height={45} className="relative object-contain transform group-hover:scale-110 transition-transform" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white animate-pulse-soft" style={{ textShadow: '-1px -1px 0 #065f46, 1px -1px 0 #065f46, -1px 1px 0 #065f46, 1px 1px 0 #065f46, 0 -1px 0 #065f46, 0 1px 0 #065f46, -1px 0 0 #065f46, 1px 0 0 #065f46' }}>
+          <h1 className="text-2xl font-extrabold text-white animate-pulse-soft opacity-0 group-hover:opacity-100 w-0 group-hover:w-auto overflow-hidden transition-all duration-300 whitespace-nowrap" style={{ textShadow: '-1px -1px 0 #065f46, 1px -1px 0 #065f46, -1px 1px 0 #065f46, 1px 1px 0 #065f46, 0 -1px 0 #065f46, 0 1px 0 #065f46, -1px 0 0 #065f46, 1px 0 0 #065f46' }}>
             INFORA
           </h1>
         </div>
@@ -75,25 +75,26 @@ const Sidebar = () => {
                 key={item.href}
                 href={item.href}
                 style={{ animationDelay: `${index * 50}ms` }}
-                className={`group relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 animate-fade-in ${
+                className={`group/link relative flex items-center justify-center group-hover:justify-start space-x-3 px-4 py-3 rounded-xl transition-all duration-300 animate-fade-in ${
                   isActive
                     ? 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg shadow-green-500/50'
-                    : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:translate-x-1'
+                    : 'text-gray-300 hover:bg-gray-800/50 hover:text-white group-hover:hover:translate-x-1'
                 }`}
+                title={item.label}
               >
                 {isActive && (
                   <div className="absolute left-0 w-1 h-8 bg-white rounded-r-full"></div>
                 )}
-                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-green-400'} transition-colors`} />
-                <span className="font-medium">{item.label}</span>
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'group-hover/link:text-green-400'} transition-colors`} />
+                <span className="font-medium opacity-0 group-hover:opacity-100 w-0 group-hover:w-auto overflow-hidden transition-all duration-300 whitespace-nowrap">{item.label}</span>
               </Link>
             );
           })}
         </nav>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-700 bg-gradient-to-t from-gray-900 to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 p-4 group-hover:p-6 border-t border-gray-700 bg-gradient-to-t from-gray-900 to-transparent transition-all duration-300">
         <div className="mb-3">
-          <div className="flex items-center space-x-3 mb-4 p-3 rounded-xl bg-gray-800/50 backdrop-blur-sm">
+          <div className="flex items-center justify-center group-hover:justify-start space-x-3 mb-4 p-3 rounded-xl bg-gray-800/50 backdrop-blur-sm transition-all duration-300">
             <div className="relative flex-shrink-0">
               <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full blur-sm opacity-50"></div>
               <div className="relative h-12 w-12 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full flex items-center justify-center shadow-lg ring-2 ring-green-400/20">
@@ -102,7 +103,7 @@ const Sidebar = () => {
                 </span>
               </div>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 w-0 group-hover:w-auto overflow-hidden transition-all duration-300">
               <p className="font-semibold text-white text-sm truncate">
                 {currentUser?.full_name || 'User'}
               </p>
@@ -111,10 +112,11 @@ const Sidebar = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="group w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl transition-all text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+            className="group/btn w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl transition-all text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+            title="Logout"
           >
-            <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-            <span>Logout</span>
+            <LogOut className="w-4 h-4 group-hover/btn:rotate-12 transition-transform flex-shrink-0" />
+            <span className="opacity-0 group-hover:opacity-100 w-0 group-hover:w-auto overflow-hidden transition-all duration-300 whitespace-nowrap">Logout</span>
           </button>
         </div>
       </div>

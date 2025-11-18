@@ -18,7 +18,7 @@ const IncidentRequestPage = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen p-8">
+      <main className="ml-20 flex-1 min-h-screen p-8 transition-all duration-300">
         <PageHeader
           title="Incident / Issue Request"
           description="Report hardware or software problems directly to IT via ServiceNow"

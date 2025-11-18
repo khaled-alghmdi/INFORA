@@ -201,7 +201,7 @@ EMP-003,Mike Wilson,mike.wilson@tamergroup.com,Sales,user,true,TempPass789!`;
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen p-8">
+      <main className="ml-20 flex-1 min-h-screen p-8 transition-all duration-300">
         <PageHeader
           title="Bulk Operations"
           description="Import/export multiple devices and users at once - Device assignments done separately"

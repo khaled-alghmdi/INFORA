@@ -482,7 +482,7 @@ const ScanPage = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen p-8">
+      <main className="ml-20 flex-1 min-h-screen p-8 transition-all duration-300">
         <PageHeader
           title="Universal Search"
           description="Search for devices or users with all related data"

@@ -83,7 +83,7 @@ const MyDevicesPage = () => {
     return (
       <div className="flex">
         <Sidebar />
-        <main className="ml-64 flex-1 min-h-screen p-8">
+        <main className="ml-20 flex-1 min-h-screen p-8 transition-all duration-300">
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-green-500 dark:border-green-400"></div>
             <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">Loading your devices...</p>
@@ -96,7 +96,7 @@ const MyDevicesPage = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen p-8">
+      <main className="ml-20 flex-1 min-h-screen p-8 transition-all duration-300">
         <PageHeader
           title={`${getGreeting()}, ${currentUser?.full_name || 'User'}!`}
           description="View and manage your assigned devices"

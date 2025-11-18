@@ -109,7 +109,7 @@ const Dashboard = () => {
   return (
     <div className="flex">
       <Sidebar />
-      <main className="ml-64 flex-1 min-h-screen p-8 relative overflow-hidden">
+      <main className="ml-20 flex-1 min-h-screen p-8 relative overflow-hidden transition-all duration-300">
         <div className="relative z-10">
         <PageHeader
           title="Dashboard"
