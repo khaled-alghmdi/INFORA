@@ -108,12 +108,24 @@ const Sidebar = () => {
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 group-hover:p-6 border-t border-gray-700 group-hover:border-green-500/20 bg-gradient-to-t from-gray-900 to-transparent transition-all duration-500">
           <div className="mb-3">
-            <div className="flex items-center justify-center group-hover:justify-start space-x-3 mb-4 p-3 rounded-xl bg-gray-800/50 group-hover:bg-gray-800/80 backdrop-blur-sm transition-all duration-500">
+            <Link
+              href="/profile"
+              className="flex items-center justify-center group-hover:justify-start space-x-3 mb-4 p-3 rounded-xl bg-gray-800/50 group-hover:bg-gray-800/80 backdrop-blur-sm transition-all duration-500 hover:bg-gray-800/90 cursor-pointer"
+            >
               <div className="relative flex-shrink-0">
-                <div className="relative h-12 w-12 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full flex items-center justify-center shadow-lg ring-2 ring-green-400/20 group-hover:ring-green-400/30 transition-all duration-500">
-                  <span className="text-white font-bold text-lg">
-                    {currentUser?.full_name?.charAt(0).toUpperCase() || 'U'}
-                  </span>
+                <div className="relative h-12 w-12 bg-gradient-to-br from-green-600 to-emerald-700 rounded-full flex items-center justify-center shadow-lg ring-2 ring-green-400/20 group-hover:ring-green-400/30 transition-all duration-500 overflow-hidden">
+                  {currentUser?.profile_image ? (
+                    <Image
+                      src={currentUser.profile_image}
+                      alt={currentUser?.full_name || 'User'}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="text-white font-bold text-lg">
+                      {currentUser?.full_name?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex-1 min-w-0 opacity-0 group-hover:opacity-100 max-w-0 group-hover:max-w-[200px] overflow-hidden transition-all duration-500">
@@ -122,7 +134,7 @@ const Sidebar = () => {
                 </p>
                 <p className="text-xs text-gray-400 truncate">{currentUser?.email || ''}</p>
               </div>
-            </div>
+            </Link>
             <button
               onClick={handleLogout}
               className="group/btn w-full flex items-center justify-center group-hover:justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl transition-all text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"

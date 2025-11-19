@@ -1,10 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { shelfAPI, deviceAPI, warehouseAPI, Shelf, Device } from '@/lib/api/warehouse';
+import { shelfAPI, deviceAPI, warehouseAPI, categoryAPI, Shelf, Device, ShelfCategory } from '@/lib/api/warehouse';
 
 type WarehouseContextType = {
   shelves: Shelf[];
+  categories: ShelfCategory[];
   devices: Device[];
   unassignedDevices: Device[];
   isLoading: boolean;
@@ -16,7 +17,7 @@ type WarehouseContextType = {
   
   // Actions
   loadWarehouse: () => Promise<void>;
-  createShelf: (name: string, rows: number, columns: number) => Promise<void>;
+  createShelf: (name: string, rows: number, columns: number, categoryId?: number | null) => Promise<void>;
   updateShelf: (id: number, updates: Partial<Shelf>) => Promise<void>;
   deleteShelf: (id: number) => Promise<void>;
   assignDevice: (deviceId: string, shelfId: number, slotIndex: number) => Promise<void>;
@@ -28,12 +29,17 @@ type WarehouseContextType = {
   setGridSize: (size: 'small' | 'medium' | 'large') => void;
   autoFillSlots: () => Promise<void>;
   searchDevices: (query: string) => Device[];
+  // Category actions
+  createCategory: (name: string) => Promise<void>;
+  updateCategory: (id: number, updates: Partial<ShelfCategory>) => Promise<void>;
+  deleteCategory: (id: number) => Promise<void>;
 };
 
 const WarehouseContext = createContext<WarehouseContextType | undefined>(undefined);
 
 export const WarehouseProvider = ({ children }: { children: ReactNode }) => {
   const [shelves, setShelves] = useState<Shelf[]>([]);
+  const [categories, setCategories] = useState<ShelfCategory[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +56,22 @@ export const WarehouseProvider = ({ children }: { children: ReactNode }) => {
     try {
       setIsLoading(true);
       setError(null);
+      
+      // Try to load categories, but don't fail if table doesn't exist yet
+      let categoriesData: ShelfCategory[] = [];
+      try {
+        categoriesData = await categoryAPI.getAll();
+      } catch (categoryErr: any) {
+        // If table doesn't exist, just log and continue with empty categories
+        if (categoryErr.code === 'PGRST205' || categoryErr.message?.includes('shelf_categories')) {
+          console.warn('Categories table not found. Please run the SQL migration to create it.');
+        } else {
+          throw categoryErr;
+        }
+      }
+      
       const { shelves: shelvesData, devices: devicesData } = await warehouseAPI.loadWarehouse();
+      setCategories(categoriesData);
       setShelves(shelvesData);
       setDevices(devicesData);
     } catch (err: any) {
@@ -61,9 +82,9 @@ export const WarehouseProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const createShelf = useCallback(async (name: string, rows: number, columns: number) => {
+  const createShelf = useCallback(async (name: string, rows: number, columns: number, categoryId?: number | null) => {
     try {
-      const newShelf = await shelfAPI.create(name, rows, columns);
+      const newShelf = await shelfAPI.create(name, rows, columns, categoryId);
       setShelves((prev) => [...prev, newShelf].sort((a, b) => a.name.localeCompare(b.name)));
     } catch (err: any) {
       setError(err.message || 'Failed to create shelf');
@@ -220,8 +241,41 @@ export const WarehouseProvider = ({ children }: { children: ReactNode }) => {
     );
   }, [devices]);
 
+  const createCategory = useCallback(async (name: string) => {
+    try {
+      const newCategory = await categoryAPI.create(name);
+      setCategories((prev) => [...prev, newCategory].sort((a, b) => a.display_order - b.display_order));
+    } catch (err: any) {
+      setError(err.message || 'Failed to create category');
+      throw err;
+    }
+  }, []);
+
+  const updateCategory = useCallback(async (id: number, updates: Partial<ShelfCategory>) => {
+    try {
+      const updated = await categoryAPI.update(id, updates);
+      setCategories((prev) =>
+        prev.map((c) => (c.id === id ? updated : c)).sort((a, b) => a.display_order - b.display_order)
+      );
+    } catch (err: any) {
+      setError(err.message || 'Failed to update category');
+      throw err;
+    }
+  }, []);
+
+  const deleteCategory = useCallback(async (id: number) => {
+    try {
+      await categoryAPI.delete(id);
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete category');
+      throw err;
+    }
+  }, []);
+
   const value: WarehouseContextType = {
     shelves,
+    categories,
     devices,
     unassignedDevices,
     isLoading,
@@ -243,6 +297,9 @@ export const WarehouseProvider = ({ children }: { children: ReactNode }) => {
     setGridSize,
     autoFillSlots,
     searchDevices,
+    createCategory,
+    updateCategory,
+    deleteCategory,
   };
 
   return <WarehouseContext.Provider value={value}>{children}</WarehouseContext.Provider>;

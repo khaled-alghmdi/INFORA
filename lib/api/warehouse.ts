@@ -1,11 +1,25 @@
 import { supabase } from '@/lib/supabase';
 
+export type ShelfCategory = {
+  id: number;
+  name: string;
+  display_order: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type Shelf = {
   id: number;
   name: string;
   rows: number;
   columns: number;
   barcode?: string | null;
+  section_barcode_1?: string | null;
+  section_barcode_2?: string | null;
+  section_barcode_3?: string | null;
+  sub_category_1?: string | null;
+  sub_category_2?: string | null;
+  sub_category_3?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -20,6 +34,72 @@ export type Device = {
   assigned_to: string | null;
   shelf_id: number | null;
   slot_index: number | null;
+};
+
+// Category Management API
+export const categoryAPI = {
+  // Get all categories
+  getAll: async (): Promise<ShelfCategory[]> => {
+    const { data, error } = await supabase
+      .from('shelf_categories')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  // Create category
+  create: async (name: string): Promise<ShelfCategory> => {
+    const { data: categories } = await supabase
+      .from('shelf_categories')
+      .select('display_order')
+      .order('display_order', { ascending: false })
+      .limit(1);
+
+    const nextOrder = categories && categories.length > 0 
+      ? (categories[0].display_order || 0) + 1 
+      : 1;
+
+    const { data, error } = await supabase
+      .from('shelf_categories')
+      .insert([{ name, display_order: nextOrder }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Update category
+  update: async (id: number, updates: Partial<ShelfCategory>): Promise<ShelfCategory> => {
+    const { data, error } = await supabase
+      .from('shelf_categories')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Delete category
+  delete: async (id: number): Promise<void> => {
+    // First, unassign all shelves from this category
+    await supabase
+      .from('shelves')
+      .update({ category_id: null })
+      .eq('category_id', id);
+
+    // Then delete the category
+    const { error } = await supabase
+      .from('shelf_categories')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
 };
 
 // Shelf Management API
@@ -48,10 +128,10 @@ export const shelfAPI = {
   },
 
   // Create shelf
-  create: async (name: string, rows: number, columns: number): Promise<Shelf> => {
+  create: async (name: string, rows: number, columns: number, categoryId?: number | null): Promise<Shelf> => {
     const { data, error } = await supabase
       .from('shelves')
-      .insert([{ name, rows, columns }])
+      .insert([{ name, rows, columns, category_id: categoryId || null }])
       .select()
       .single();
 

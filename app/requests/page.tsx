@@ -44,6 +44,24 @@ const RequestsPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    show: boolean;
+    closedCount: number;
+  }>({
+    show: false,
+    closedCount: 0,
+  });
   const [formData, setFormData] = useState({
     request_type: 'device_request' as RequestType,
     title: '',
@@ -174,18 +192,33 @@ const RequestsPage = () => {
 
   const handleSubmitRequest = async () => {
     if (!formData.title || !formData.description) {
-      alert('Please fill in all required fields');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fill in all required fields',
+      });
       return;
     }
 
     // Validate device type for device requests
     if (formData.request_type === 'device_request' && !formData.device_type) {
-      alert('Please select a device type for your request');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please select a device type for your request',
+      });
       return;
     }
 
     if (!currentUserId) {
-      alert('User not found. Please login again.');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Authentication Error',
+        message: 'User not found. Please login again.',
+      });
       return;
     }
 
@@ -210,7 +243,12 @@ const RequestsPage = () => {
 
     if (error) {
       console.error('Error submitting request:', error);
-      alert(`Error submitting request: ${error.message}\n\nPlease ensure you have permission to create requests or contact your administrator.`);
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Error Submitting Request',
+        message: `${error.message}\n\nPlease ensure you have permission to create requests or contact your administrator.`,
+      });
       return;
     }
 
@@ -226,7 +264,12 @@ const RequestsPage = () => {
     
     setShowRequestModal(false);
     resetForm();
-    alert('✅ Request submitted successfully!');
+    setNotification({
+      show: true,
+      type: 'success',
+      title: 'Request Submitted Successfully',
+      message: 'Your request has been submitted and will be reviewed by the IT team.',
+    });
   };
 
   const handleUpdateStatus = async (requestId: string, newStatus: RequestStatus) => {
@@ -314,24 +357,26 @@ const RequestsPage = () => {
     }
   };
 
-  const handleDeleteClosedRequests = async () => {
+  const handleDeleteClosedRequests = () => {
     const closedCount = requests.filter(r => r.status === 'closed' || r.status === 'completed').length;
     
     if (closedCount === 0) {
-      alert('No closed or completed requests to delete.');
+      setNotification({
+        show: true,
+        type: 'info',
+        title: 'No Requests to Delete',
+        message: 'No closed or completed requests to delete.',
+      });
       return;
     }
 
-    const confirmed = confirm(
-      `⚠️ Delete ${closedCount} closed/completed requests?\n\n` +
-      'This will permanently delete all requests with status:\n' +
-      '• Closed\n' +
-      '• Completed\n\n' +
-      'This action CANNOT be undone. Continue?'
-    );
-    
-    if (!confirmed) return;
+    setDeleteConfirmation({
+      show: true,
+      closedCount,
+    });
+  };
 
+  const handleConfirmDeleteClosedRequests = async () => {
     setLoading(true);
     
     try {
@@ -342,14 +387,35 @@ const RequestsPage = () => {
       
       if (error) throw error;
 
-      alert(`✓ Successfully deleted ${closedCount} closed/completed requests!`);
+      setNotification({
+        show: true,
+        type: 'success',
+        title: 'Requests Deleted Successfully',
+        message: `Successfully deleted ${deleteConfirmation.closedCount} closed/completed requests!`,
+      });
       await fetchRequests();
     } catch (error: any) {
       console.error('Error deleting requests:', error);
-      alert(`Error deleting requests: ${error.message}`);
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Error Deleting Requests',
+        message: error.message,
+      });
     } finally {
       setLoading(false);
+      setDeleteConfirmation({
+        show: false,
+        closedCount: 0,
+      });
     }
+  };
+
+  const handleCancelDeleteClosedRequests = () => {
+    setDeleteConfirmation({
+      show: false,
+      closedCount: 0,
+    });
   };
 
   return (
@@ -637,6 +703,148 @@ const RequestsPage = () => {
                   className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
                 >
                   Submit Request
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmation.show && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 px-4 py-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete requests confirmation dialog"
+            tabIndex={-1}
+            onClick={handleCancelDeleteClosedRequests}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                handleCancelDeleteClosedRequests();
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-gray-900"
+              role="document"
+              tabIndex={0}
+              aria-label="Delete requests confirmation content"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 rounded-xl bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
+                <AlertCircle className="h-10 w-10 flex-shrink-0" />
+                <div>
+                  <p className="text-lg font-semibold">Delete Requests</p>
+                  <p className="text-sm text-red-600 dark:text-red-200/80">
+                    Delete {deleteConfirmation.closedCount} closed/completed requests?
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 text-sm text-gray-600 dark:text-gray-300">
+                <p className="mb-2">This will permanently delete all requests with status:</p>
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>Closed</li>
+                  <li>Completed</li>
+                </ul>
+                <p className="mt-4 font-semibold text-gray-900 dark:text-white">This action CANNOT be undone.</p>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCancelDeleteClosedRequests}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 sm:w-32"
+                  tabIndex={0}
+                  aria-label="Cancel deletion"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteClosedRequests}
+                  className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 text-center font-semibold text-white transition hover:from-red-700 hover:to-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 sm:w-32"
+                  tabIndex={0}
+                  aria-label="Confirm delete requests"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification Modal */}
+        {notification.show && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 px-4 py-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Notification dialog"
+            tabIndex={-1}
+            onClick={() => setNotification({ ...notification, show: false })}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                setNotification({ ...notification, show: false });
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-gray-900"
+              role="document"
+              tabIndex={0}
+              aria-label="Notification content"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                className={`flex items-center gap-4 rounded-xl p-4 ${
+                  notification.type === 'success'
+                    ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                    : notification.type === 'error'
+                    ? 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                    : 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
+                }`}
+              >
+                {notification.type === 'success' ? (
+                  <CheckCircle className="h-10 w-10 flex-shrink-0" />
+                ) : notification.type === 'error' ? (
+                  <XCircle className="h-10 w-10 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="h-10 w-10 flex-shrink-0" />
+                )}
+                <div>
+                  <p className="text-lg font-semibold">{notification.title}</p>
+                  <p
+                    className={`text-sm whitespace-pre-line ${
+                      notification.type === 'success'
+                        ? 'text-green-600 dark:text-green-200/80'
+                        : notification.type === 'error'
+                        ? 'text-red-600 dark:text-red-200/80'
+                        : 'text-blue-600 dark:text-blue-200/80'
+                    }`}
+                  >
+                    {notification.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setNotification({ ...notification, show: false })}
+                  className={`rounded-lg px-6 py-3 text-center font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    notification.type === 'success'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800'
+                      : notification.type === 'error'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                  }`}
+                  tabIndex={0}
+                  aria-label="Close notification"
+                >
+                  OK
                 </button>
               </div>
             </div>

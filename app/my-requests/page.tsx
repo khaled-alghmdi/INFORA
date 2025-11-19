@@ -27,6 +27,17 @@ const MyRequestsPage = () => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
   const [formData, setFormData] = useState({
     request_type: 'device_request' as 'device_request' | 'it_support',
     title: '',
@@ -99,18 +110,33 @@ const MyRequestsPage = () => {
 
   const handleSubmitRequest = async () => {
     if (!formData.title || !formData.description) {
-      alert('Please fill in all required fields');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fill in all required fields',
+      });
       return;
     }
 
     // Validate device type for device requests
     if (formData.request_type === 'device_request' && !formData.device_type) {
-      alert('Please select a device type for your request');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please select a device type for your request',
+      });
       return;
     }
 
     if (!currentUser || !currentUser.id) {
-      alert('User not found. Please login again.');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Authentication Error',
+        message: 'User not found. Please login again.',
+      });
       return;
     }
 
@@ -137,7 +163,12 @@ const MyRequestsPage = () => {
 
     if (error) {
       console.error('Error submitting request:', error);
-      alert(`Error submitting request: ${error.message}\n\nPlease ensure you have permission to create requests or contact your administrator.`);
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Error Submitting Request',
+        message: `${error.message}\n\nPlease ensure you have permission to create requests or contact your administrator.`,
+      });
       return;
     }
 
@@ -145,7 +176,12 @@ const MyRequestsPage = () => {
     setShowRequestModal(false);
     fetchMyRequests(currentUser.id);
     resetForm();
-    alert('✅ Request submitted successfully! IT team will review it soon.');
+    setNotification({
+      show: true,
+      type: 'success',
+      title: 'Request Submitted Successfully',
+      message: 'IT team will review it soon.',
+    });
   };
 
   const resetForm = () => {
@@ -514,6 +550,82 @@ const MyRequestsPage = () => {
                   className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 transition-all shadow-md"
                 >
                   Submit Request
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification Modal */}
+        {notification.show && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 px-4 py-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Notification dialog"
+            tabIndex={-1}
+            onClick={() => setNotification({ ...notification, show: false })}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                setNotification({ ...notification, show: false });
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-gray-900"
+              role="document"
+              tabIndex={0}
+              aria-label="Notification content"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                className={`flex items-center gap-4 rounded-xl p-4 ${
+                  notification.type === 'success'
+                    ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                    : notification.type === 'error'
+                    ? 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                    : 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
+                }`}
+              >
+                {notification.type === 'success' ? (
+                  <CheckCircle className="h-10 w-10 flex-shrink-0" />
+                ) : notification.type === 'error' ? (
+                  <XCircle className="h-10 w-10 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="h-10 w-10 flex-shrink-0" />
+                )}
+                <div>
+                  <p className="text-lg font-semibold">{notification.title}</p>
+                  <p
+                    className={`text-sm whitespace-pre-line ${
+                      notification.type === 'success'
+                        ? 'text-green-600 dark:text-green-200/80'
+                        : notification.type === 'error'
+                        ? 'text-red-600 dark:text-red-200/80'
+                        : 'text-blue-600 dark:text-blue-200/80'
+                    }`}
+                  >
+                    {notification.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setNotification({ ...notification, show: false })}
+                  className={`rounded-lg px-6 py-3 text-center font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    notification.type === 'success'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800'
+                      : notification.type === 'error'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                  }`}
+                  tabIndex={0}
+                  aria-label="Close notification"
+                >
+                  OK
                 </button>
               </div>
             </div>

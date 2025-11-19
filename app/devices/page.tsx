@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Sidebar from '@/components/Sidebar';
 import PageHeader from '@/components/PageHeader';
-import { Plus, Edit, Trash2, Search, Filter, Shield, ShieldAlert } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, Shield, ShieldAlert, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
 type Device = {
@@ -35,6 +35,7 @@ const DevicesPage = () => {
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -42,6 +43,24 @@ const DevicesPage = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showAssignHint, setShowAssignHint] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({
+    show: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    show: boolean;
+    deviceId: string | null;
+  }>({
+    show: false,
+    deviceId: null,
+  });
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -182,7 +201,12 @@ const DevicesPage = () => {
   const handleAddDevice = async () => {
     // Validate required fields
     if (!formData.name || !formData.type || !formData.serial_number || !formData.purchase_date) {
-      alert('Please fill in all required fields: Device Name, Type, Serial Number, and Purchase Date');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fill in all required fields: Device Name, Type, Serial Number, and Purchase Date',
+      });
       return;
     }
 
@@ -199,14 +223,24 @@ const DevicesPage = () => {
 
     if (error) {
       console.error('Error adding device:', error);
-      alert(`Error adding device: ${error.message}`);
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Error Adding Device',
+        message: error.message,
+      });
       return;
     }
 
     setShowAddModal(false);
     fetchDevices();
     resetForm();
-    alert('Device added successfully!');
+    setNotification({
+      show: true,
+      type: 'success',
+      title: 'Device Added Successfully',
+      message: 'The device has been added to the system.',
+    });
   };
 
   const handleEditDevice = async () => {
@@ -214,7 +248,12 @@ const DevicesPage = () => {
 
     // Validate required fields
     if (!formData.name || !formData.type || !formData.serial_number || !formData.purchase_date) {
-      alert('Please fill in all required fields: Device Name, Type, Serial Number, and Purchase Date');
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fill in all required fields: Device Name, Type, Serial Number, and Purchase Date',
+      });
       return;
     }
 
@@ -234,7 +273,12 @@ const DevicesPage = () => {
 
     if (error) {
       console.error('Error updating device:', error);
-      alert(`Error updating device: ${error.message}`);
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Error Updating Device',
+        message: error.message,
+      });
       return;
     }
 
@@ -242,17 +286,54 @@ const DevicesPage = () => {
     fetchDevices();
     resetForm();
     setSelectedDevice(null);
-    alert('Device updated successfully!');
+    setNotification({
+      show: true,
+      type: 'success',
+      title: 'Device Updated Successfully',
+      message: 'The device information has been updated.',
+    });
   };
 
-  const handleDeleteDevice = async (id: string) => {
-    if (confirm('Are you sure you want to delete this device?')) {
-      const { error } = await supabase.from('devices').delete().eq('id', id);
+  const handleDeleteDevice = (id: string) => {
+    setDeleteConfirmation({
+      show: true,
+      deviceId: id,
+    });
+  };
 
-      if (!error) {
-        fetchDevices();
-      }
+  const handleConfirmDeleteDevice = async () => {
+    if (!deleteConfirmation.deviceId) return;
+
+    const { error } = await supabase.from('devices').delete().eq('id', deleteConfirmation.deviceId);
+
+    if (error) {
+      setNotification({
+        show: true,
+        type: 'error',
+        title: 'Error Deleting Device',
+        message: error.message,
+      });
+    } else {
+      setNotification({
+        show: true,
+        type: 'success',
+        title: 'Device Deleted Successfully',
+        message: 'The device has been permanently deleted.',
+      });
+      fetchDevices();
     }
+
+    setDeleteConfirmation({
+      show: false,
+      deviceId: null,
+    });
+  };
+
+  const handleCancelDeleteDevice = () => {
+    setDeleteConfirmation({
+      show: false,
+      deviceId: null,
+    });
   };
 
   const handleAssignDevice = async (userId: string) => {
@@ -831,30 +912,201 @@ const DevicesPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Assign Device</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Assign <strong>{selectedDevice?.name}</strong> to:
-              </p>
+              <div className="mb-4">
+                <p className="text-gray-600 dark:text-gray-400 mb-3">
+                  Assign <strong>{selectedDevice?.name}</strong> to:
+                </p>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search users by name or email..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {users.map((user) => (
-                  <button
-                    key={user.id}
-                    onClick={() => handleAssignDevice(user.id)}
-                    className="w-full text-left px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700 transition-colors"
-                  >
-                    <div className="font-medium text-gray-900 dark:text-white">{user.full_name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
-                  </button>
-                ))}
+                {users
+                  .filter((user) => {
+                    if (!userSearchTerm.trim()) return true;
+                    const searchLower = userSearchTerm.toLowerCase();
+                    return (
+                      user.full_name.toLowerCase().includes(searchLower) ||
+                      user.email.toLowerCase().includes(searchLower)
+                    );
+                  })
+                  .map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => handleAssignDevice(user.id)}
+                      className="w-full text-left px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-300 dark:hover:border-green-700 transition-colors"
+                    >
+                      <div className="font-medium text-gray-900 dark:text-white">{user.full_name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                    </button>
+                  ))}
+                {users.filter((user) => {
+                  if (!userSearchTerm.trim()) return false;
+                  const searchLower = userSearchTerm.toLowerCase();
+                  return (
+                    user.full_name.toLowerCase().includes(searchLower) ||
+                    user.email.toLowerCase().includes(searchLower)
+                  );
+                }).length === 0 && userSearchTerm.trim() && (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No users found matching &quot;{userSearchTerm}&quot;
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => {
                   setShowAssignModal(false);
                   setSelectedDevice(null);
+                  setUserSearchTerm('');
                 }}
                 className="w-full mt-4 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmation.show && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 px-4 py-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete device confirmation dialog"
+            tabIndex={-1}
+            onClick={handleCancelDeleteDevice}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                handleCancelDeleteDevice();
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-gray-900"
+              role="document"
+              tabIndex={0}
+              aria-label="Delete device confirmation content"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 rounded-xl bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-200">
+                <AlertCircle className="h-10 w-10 flex-shrink-0" />
+                <div>
+                  <p className="text-lg font-semibold">Delete Device</p>
+                  <p className="text-sm text-red-600 dark:text-red-200/80">
+                    Are you sure you want to delete this device?
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 text-sm text-gray-600 dark:text-gray-300">
+                <p>This will permanently delete the device. This action cannot be undone.</p>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCancelDeleteDevice}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 sm:w-32"
+                  tabIndex={0}
+                  aria-label="Cancel deletion"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteDevice}
+                  className="w-full rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 text-center font-semibold text-white transition hover:from-red-700 hover:to-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 sm:w-32"
+                  tabIndex={0}
+                  aria-label="Confirm delete device"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification Modal */}
+        {notification.show && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 px-4 py-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Notification dialog"
+            tabIndex={-1}
+            onClick={() => setNotification({ ...notification, show: false })}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                setNotification({ ...notification, show: false });
+              }
+            }}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl dark:bg-gray-900"
+              role="document"
+              tabIndex={0}
+              aria-label="Notification content"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                className={`flex items-center gap-4 rounded-xl p-4 ${
+                  notification.type === 'success'
+                    ? 'bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200'
+                    : notification.type === 'error'
+                    ? 'bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200'
+                    : 'bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200'
+                }`}
+              >
+                {notification.type === 'success' ? (
+                  <CheckCircle className="h-10 w-10 flex-shrink-0" />
+                ) : notification.type === 'error' ? (
+                  <XCircle className="h-10 w-10 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="h-10 w-10 flex-shrink-0" />
+                )}
+                <div>
+                  <p className="text-lg font-semibold">{notification.title}</p>
+                  <p
+                    className={`text-sm ${
+                      notification.type === 'success'
+                        ? 'text-green-600 dark:text-green-200/80'
+                        : notification.type === 'error'
+                        ? 'text-red-600 dark:text-red-200/80'
+                        : 'text-blue-600 dark:text-blue-200/80'
+                    }`}
+                  >
+                    {notification.message}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setNotification({ ...notification, show: false })}
+                  className={`rounded-lg px-6 py-3 text-center font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    notification.type === 'success'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800'
+                      : notification.type === 'error'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+                      : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                  }`}
+                  tabIndex={0}
+                  aria-label="Close notification"
+                >
+                  OK
+                </button>
+              </div>
             </div>
           </div>
         )}
