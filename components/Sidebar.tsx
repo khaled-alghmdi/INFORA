@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan, Search, Upload, PenSquare, ShieldAlert, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, Monitor, Users, FileText, LogOut, MessageSquare, Bell, TrendingUp, Activity, Scan, Search, Upload, PenSquare, ShieldAlert, AlertCircle, Warehouse } from 'lucide-react';
 import { getCurrentUser, logout } from '@/lib/auth';
 
 const Sidebar = () => {
@@ -21,6 +21,7 @@ const Sidebar = () => {
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/devices', label: 'Devices', icon: Monitor },
     { href: '/users', label: 'Users', icon: Users },
+    { href: '/warehouse', label: 'Warehouse', icon: Warehouse },
     { href: '/scan', label: 'Quick Search', icon: Search },
     { href: '/requests', label: 'Requests', icon: MessageSquare },
     { href: '/bulk', label: 'Bulk Operations', icon: Upload },
